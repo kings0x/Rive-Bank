@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { AuthGuard } from "@/components/auth-guard"
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
 import { AccountsOverview } from "@/components/dashboard/accounts-overview"
@@ -32,7 +32,7 @@ export default function DashboardPage() {
   const renderSection = () => {
     switch (activeSection) {
       case "accounts":
-        return <AccountsOverview onSectionChange={setActiveSection} onAccountSelect={setSelectedAccountId} />
+        return <AccountsOverview onSectionChange = {setActiveSection} onAccountSelect={(id: string | null) => setSelectedAccountId(id)} />
       case "transfers":
         return <WireTransfers />
       case "crypto":
@@ -47,7 +47,7 @@ export default function DashboardPage() {
       case "support":
         return <CustomerSupport />
       default:
-        return <AccountsOverview onSectionChange={setActiveSection} onAccountSelect={setSelectedAccountId} />
+        return <AccountsOverview onSectionChange={setActiveSection} onAccountSelect={(id: string | null) => setSelectedAccountId(id)} />
     }
   }
 

@@ -8,7 +8,9 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { ArrowLeft, Eye, EyeOff, LogIn } from "lucide-react"
 import { useRouter } from "next/navigation"
-
+import { useRef, useEffect } from "react";
+//on reload, checks wether the user is connected if not redirects to login
+//make it get balances from the backend
 export default function LoginPage() {
   const [formData, setFormData] = useState({
     email: "",
@@ -18,6 +20,8 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const isMountedRef = useRef(true);
+  useEffect(() => () => { isMountedRef.current = false }, []);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -38,17 +42,34 @@ export default function LoginPage() {
     if (!validateForm()) return
 
     setIsLoading(true)
+    try{
+        const response =await fetch("http://localhost:3000/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+        credentials: "include"
+      })
 
-    // Mock authentication - in real app this would call an API
-    setTimeout(() => {
-      // For demo purposes, accept any email/password combination
-      // In real app, this would validate against a backend
-      localStorage.setItem("rive_auth_token", "mock_token_" + Date.now())
-      localStorage.setItem("rive_user_email", formData.email)
+      if (!response.ok) {
+        setErrors({ email: "Invalid email or password" })
+        if (isMountedRef.current) setIsLoading(false);
+        return
+      }
 
-      setIsLoading(false)
-      router.push("/dashboard")
-    }, 1500)
+      const data = await response.json()
+      console.log(data)
+
+      router.push("/dashboard");
+      if (isMountedRef.current) setIsLoading(false);
+    }
+    
+    catch(error: any){
+      console.log(error)
+      if (isMountedRef.current) setIsLoading(false);
+    }
+    
   }
 
   const updateFormData = (field: string, value: string) => {

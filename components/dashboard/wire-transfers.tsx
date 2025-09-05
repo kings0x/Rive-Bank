@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowRight, Shield, AlertCircle } from "lucide-react"
 import { TransactionSecurityModal } from "@/components/transaction-security-modal"
+import { useAccountStore } from "@/store/account-store"
+import { useCurrentAccountIdStore } from "@/store/account-store"
 
 export function WireTransfers() {
   const [formData, setFormData] = useState({
@@ -18,9 +20,12 @@ export function WireTransfers() {
     amount: "",
     memo: "",
   })
+  const setIdStore = useCurrentAccountIdStore((s) => s.setCurrentAccountId)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [showSecurityModal, setShowSecurityModal] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const accountDetails = useAccountStore((s) => s.accountDetails)
 
   useEffect(() => {
     const selectedAccount = localStorage.getItem("rive_selected_account")
@@ -38,22 +43,88 @@ export function WireTransfers() {
     }
   }
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {}
+  const findAccount = (accountType: string) => {
+    for (let i in accountDetails) {
+      if (accountDetails[i].type === accountType) {
+        console.log("in for loop", accountDetails[i])
+        return accountDetails[i]
+      }
+    }
+  }
 
+  const validateForm = async() => {
+    console.log("formData.fromAccount", formData.fromAccount)
+    const newErrors: Record<string, string> = {}
+    let userAccount
     if (!formData.fromAccount) newErrors.fromAccount = "Please select an account"
+    
+    userAccount = findAccount(formData.fromAccount)
+    console.log("userAccount", userAccount)
+    setIdStore(userAccount ? userAccount.id : "")
     if (!formData.recipientName.trim()) newErrors.recipientName = "Recipient name is required"
     if (formData.routingNumber.length !== 9) newErrors.routingNumber = "Routing number must be 9 digits"
     if (!formData.accountNumber.trim()) newErrors.accountNumber = "Account number is required"
-    if (!formData.amount || Number.parseFloat(formData.amount) <= 0) newErrors.amount = "Please enter a valid amount"
+
+    if (!formData.amount || Number.parseInt(formData.amount) <= 0) newErrors.amount = "Please enter a valid amount"
+    if(userAccount && Number.parseInt(formData.amount) > userAccount.balance ) newErrors.amount = "Insufficient Funds"
+
+    const account_id = userAccount && userAccount.id
+    const recipient_account_number = formData.accountNumber
+    const recipient_name = formData.recipientName
+    const routing_number = formData.routingNumber
+    const amount = Number.parseInt(formData.amount || "0", 10)
+
+    try{
+
+      const response = await fetch("/api/verify-transaction-details", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          account_id,
+          recipient_account_number,
+          recipient_name,
+          routing_number,
+          amount
+        })
+      })
+      if(!response.ok){
+        const errorData = await response.json()
+        if(errorData.message === "Insufficient balance"){
+          newErrors.amount = errorData.message
+        }
+
+        if(errorData.message === "Recipient details not found"){
+          newErrors.accountNumber = errorData.message
+          newErrors.recipientName = errorData.message
+        }
+
+      }
+
+    }
+    catch(error: any){
+      newErrors.fromAccount = "Something went wrong"
+      console.log(error.message)
+    }
+
+    
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = () => {
-    if (validateForm()) {
+  const handleSubmit = async () => {
+    setIsProcessing(true)
+    try {
+      const ok = await validateForm()
+      if (!ok) return
+      // validation passed — open modal
       setShowSecurityModal(true)
+    } catch (err) {
+      console.error("handleSubmit error:", err)
+    } finally {
+      setIsProcessing(false)
     }
   }
 
@@ -166,7 +237,7 @@ export function WireTransfers() {
               <Input
                 id="amount"
                 type="number"
-                step="0.01"
+                step="1"
                 value={formData.amount}
                 onChange={(e) => updateFormData("amount", e.target.value)}
                 className="glass-dark border-emerald-500/30"
@@ -200,8 +271,9 @@ export function WireTransfers() {
               onClick={handleSubmit}
               className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
               size="lg"
-              disabled={isProcessing}
+              disabled={isProcessing||showSecurityModal}
             >
+  
               {isProcessing ? (
                 <div className="flex items-center">
                   <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin mr-2"></div>
@@ -246,9 +318,11 @@ export function WireTransfers() {
         transactionType="Wire Transfer"
         transactionDetails={{
           recipient: formData.recipientName,
+          accountNumber: formData.accountNumber,
           amount: formData.amount,
           account: formData.fromAccount,
         }}
+        
       />
     </div>
   )

@@ -27,12 +27,8 @@ export default function OnboardingPage() {
 
   const validateInvitationCode = () => {
     // Mock validation - in real app this would call an API
-    if (formData.invitationCode.length !== 7) {
-      setErrors({ invitationCode: "Invitation code must be 7 digits" })
+    setErrors({ invitationCode: "Incorrect code entered" })
       return false
-    }
-    setErrors({})
-    return true
   }
 
   const validateAccountStep = () => {

@@ -1,5 +1,5 @@
 // Enhanced security utilities for Rive Banking
-
+import crypto from 'crypto'
 export interface SecurityEvent {
   id: string
   type: "login" | "transaction" | "pin_change" | "failed_attempt" | "suspicious_activity"
@@ -181,4 +181,7 @@ export class SecurityManager {
 
     return isValid
   }
+}
+export function generateCode(){
+    return crypto.randomInt(100000, 1000000).toString();
 }

@@ -1,5 +1,4 @@
 "use client"
-
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -19,35 +18,23 @@ import {
   DollarSign,
 } from "lucide-react"
 import { useState, useEffect } from "react"
+import { DashboardSection } from "@/app/dashboard/page"
+import { useAccountStore } from "@/store/account-store"
+
+
 
 interface AccountsOverviewProps {
-  onSectionChange?: (section: string) => void
-  onAccountSelect?: (accountId: string) => void
+  onSectionChange?: (section: DashboardSection) => void
+  onAccountSelect?: (accountId: string | null) => void
 }
 
-const mockAccounts = [
-  {
-    id: "checking",
-    name: "Elite Checking",
-    type: "Checking",
-    balance: 3500000.0,
-    accountNumber: "****8392",
-  },
-  {
-    id: "savings",
-    name: "Wealth Savings",
-    type: "Savings",
-    balance: 5800000.0,
-    accountNumber: "****2847",
-  },
-  {
-    id: "business",
-    name: "Business Elite",
-    type: "Business",
-    balance: 2000000.0,
-    accountNumber: "****9384",
-  },
-]
+interface Account {
+  id: string
+  name: string
+  type: string
+  balance: number
+  accountNumber: string
+}
 
 const mockTransactions = [
   {
@@ -430,6 +417,30 @@ const mockTransactions = [
   },
 ]
 
+// const userAccounts = [
+//   {
+//     id: "checking",
+//     name: "Elite Checking",
+//     type: "Checking",
+//     balance: 4500000.0,
+//     accountNumber: "****8392",
+//   },
+//   {
+//     id: "savings",
+//     name: "Wealth Savings",
+//     type: "Savings",
+//     balance: 5800000.0,
+//     accountNumber: "****2847",
+//   },
+//   {
+//     id: "business",
+//     name: "Business Elite",
+//     type: "Business",
+//     balance: 2000000.0,
+//     accountNumber: "****9384",
+//   },
+// ]
+
 export function AccountsOverview({ onSectionChange, onAccountSelect }: AccountsOverviewProps) {
   const [balancesVisible, setBalancesVisible] = useState(true)
   const [selectedTransaction, setSelectedTransaction] = useState<(typeof mockTransactions)[0] | null>(null)
@@ -440,25 +451,11 @@ export function AccountsOverview({ onSectionChange, onAccountSelect }: AccountsO
   const [transactionPin, setTransactionPin] = useState("")
   const [pendingDownload, setPendingDownload] = useState<(typeof mockTransactions)[0] | null>(null)
   const [showDownloadOptions, setShowDownloadOptions] = useState(false)
+  const [userAccounts, setUserAccounts] = useState<Account[]>([])
+  const userAccountState = useAccountStore((s) => s.accountDetails);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Simulate dynamic transaction updates
-      setTransactions((prev) => {
-        const updated = [...prev]
-        // Randomly update a transaction amount slightly (simulating real-time updates)
-        const randomIndex = Math.floor(Math.random() * updated.length)
-        const variation = (Math.random() - 0.5) * 1000 // Small random variation
-        updated[randomIndex] = {
-          ...updated[randomIndex],
-          amount: updated[randomIndex].amount + variation,
-        }
-        return updated
-      })
-      setLastUpdate(new Date())
-    }, 30000) // Update every 30 seconds
-
-    return () => clearInterval(interval)
+   useEffect(() => {
+     setUserAccounts(userAccountState);
   }, [])
 
   const formatCurrency = (amount: number) => {
@@ -479,7 +476,7 @@ export function AccountsOverview({ onSectionChange, onAccountSelect }: AccountsO
   }
 
   const handleViewDetailsClick = (accountId: string) => {
-    console.log(`[v0] View details clicked for account: ${accountId}`)
+    console.log(`[v0] View details clicked for the  account: ${accountId}`)
     if (onAccountSelect) {
       onAccountSelect(accountId)
     }
@@ -508,112 +505,8 @@ export function AccountsOverview({ onSectionChange, onAccountSelect }: AccountsO
     }
   }
 
-  const downloadReceipt = (transaction: (typeof mockTransactions)[0]) => {
-    setPendingDownload(transaction)
-    setShowDownloadOptions(true)
-  }
 
-  const handleDownloadFormat = (format: "PDF" | "JPEG") => {
-    setShowDownloadOptions(false)
-    setShowPinDialog(true)
-    if (pendingDownload) {
-      ;(pendingDownload as any).downloadFormat = format
-    }
-  }
-
-  const generateReceipt = (transaction: (typeof mockTransactions)[0], format: "PDF" | "JPEG") => {
-    const receiptContent = `
-═══════════════════════════════════════════════════════════════
-                        RIVE BANKING
-                   TRANSACTION RECEIPT
-═══════════════════════════════════════════════════════════════
-
-TRANSACTION SUMMARY
-───────────────────────────────────────────────────────────────
-Reference ID:        ${transaction.reference}
-Transaction Date:    ${new Date(transaction.date).toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })}
-Transaction Time:    ${transaction.time} EST
-Status:              ${transaction.status.toUpperCase()}
-
-FINANCIAL DETAILS
-───────────────────────────────────────────────────────────────
-Description:         ${transaction.description}
-Transaction Amount:  ${formatCurrency(transaction.amount)}
-Transaction Fee:     ${formatCurrency(transaction.fee)}
-${transaction.exchangeRate ? `Exchange Rate:      ${transaction.exchangeRate}` : ""}
-Category:            ${transaction.category}
-Type:                ${transaction.type.toUpperCase()}
-
-ACCOUNT INFORMATION
-───────────────────────────────────────────────────────────────
-From Account:        ${transaction.accountFrom}
-To Account:          ${transaction.accountTo}
-Merchant:            ${transaction.merchant}
-Location:            ${transaction.location}
-
-TRANSACTION NOTES
-───────────────────────────────────────────────────────────────
-${transaction.notes}
-
-SECURITY & VERIFICATION
-───────────────────────────────────────────────────────────────
-Receipt Generated:   ${new Date().toLocaleString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      timeZoneName: "short",
-    })}
-Digital Signature:   ${transaction.reference.replace(/-/g, "").toUpperCase()}
-Verification Code:   ${Math.random().toString(36).substr(2, 8).toUpperCase()}
-
-═══════════════════════════════════════════════════════════════
-This receipt serves as official proof of transaction completion.
-For questions or disputes, contact Rive Banking at 1-800-RIVE-BANK
-
-RIVE BANKING - Member FDIC | Equal Housing Lender
-Headquarters: 200 Park Avenue, New York, NY 10166
-═══════════════════════════════════════════════════════════════
-    `.trim()
-
-    return receiptContent
-  }
-
-  const handlePinVerification = () => {
-    if (transactionPin.length === 4 && pendingDownload) {
-      setShowPinDialog(false)
-      setTransactionPin("")
-
-      const format = (pendingDownload as any).downloadFormat || "PDF"
-      const receiptContent = generateReceipt(pendingDownload, format)
-
-      // Create and download the receipt
-      const blob = new Blob([receiptContent], { type: "text/plain" })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.href = url
-      link.download = `rive-receipt-${pendingDownload.reference}.${format.toLowerCase()}`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-
-      setPendingDownload(null)
-      alert(`Professional transaction receipt downloaded in ${format} format successfully!`)
-    } else {
-      alert("Please enter your 4-digit transaction PIN.")
-    }
-  }
-
-  const totalBalance = mockAccounts.reduce((sum, account) => sum + account.balance, 0)
+  const totalBalance = userAccounts.reduce((sum, account) => sum + account.balance, 0)
 
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8">
@@ -645,7 +538,7 @@ Headquarters: 200 Park Avenue, New York, NY 10166
 
       {/* Account Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-        {mockAccounts.map((account) => (
+        {userAccounts.map((account) => (
           <Card
             key={account.id}
             className="glass p-4 sm:p-6 lg:p-8 hover:shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all duration-300 border border-emerald-500/20"
@@ -653,10 +546,10 @@ Headquarters: 200 Park Avenue, New York, NY 10166
             <div className="flex items-start justify-between mb-4 sm:mb-6 gap-3">
               <div className="min-w-0 flex-1">
                 <h4 className="font-semibold text-sm sm:text-base lg:text-lg truncate">{account.name}</h4>
-                <p className="text-xs sm:text-sm lg:text-base text-muted-foreground mt-1">{account.type}</p>
+                <p className="text-xs sm:text-sm lg:text-base text-muted-foreground mt-1">{account.type.charAt(0).toUpperCase() + account.type.slice(1)}</p>
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="text-xs sm:text-sm text-muted-foreground font-mono">{account.accountNumber}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground font-mono">{`****${account.accountNumber.slice(-4)}`}</p>
               </div>
             </div>
             <div className="mb-4 sm:mb-6">
@@ -668,7 +561,7 @@ Headquarters: 200 Park Avenue, New York, NY 10166
               <Button
                 size="sm"
                 className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 min-h-[44px] sm:min-h-[48px] text-sm sm:text-base font-medium"
-                onClick={() => handleTransferClick(account.id)}
+                onClick={() => handleTransferClick(account.type)}
               >
                 <ArrowUpRight className="w-4 h-4 mr-2 flex-shrink-0" />
                 Transfer
@@ -677,7 +570,7 @@ Headquarters: 200 Park Avenue, New York, NY 10166
                 size="sm"
                 variant="outline"
                 className="w-full glass-dark bg-transparent border-emerald-500/30 hover:border-emerald-500/50 min-h-[44px] sm:min-h-[48px] text-sm sm:text-base font-medium"
-                onClick={() => handleViewDetailsClick(account.id)}
+                onClick={() => handleViewDetailsClick(account.type)}
               >
                 View Details
               </Button>
@@ -893,12 +786,7 @@ Headquarters: 200 Park Avenue, New York, NY 10166
                   >
                     Close
                   </Button>
-                  <Button
-                    className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 min-h-[44px] sm:min-h-[48px] text-sm sm:text-base font-medium"
-                    onClick={() => downloadReceipt(selectedTransaction)}
-                  >
-                    Download Receipt
-                  </Button>
+                  
                 </div>
               </div>
             </div>
@@ -906,95 +794,10 @@ Headquarters: 200 Park Avenue, New York, NY 10166
         </div>
       )}
 
-      <Dialog open={showDownloadOptions} onOpenChange={setShowDownloadOptions}>
-        <DialogContent className="glass-dark border-emerald-500/20 max-w-xs sm:max-w-md lg:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-emerald-400 text-base sm:text-lg lg:text-xl">
-              Select Download Format
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 sm:space-y-6">
-            <p className="text-sm sm:text-base text-muted-foreground">
-              Choose your preferred format for the transaction receipt:
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <Button
-                onClick={() => handleDownloadFormat("PDF")}
-                className="h-16 sm:h-20 lg:h-24 flex flex-col items-center justify-center bg-emerald-600 hover:bg-emerald-500 text-sm sm:text-base"
-              >
-                <div className="text-base sm:text-lg lg:text-xl font-semibold">PDF</div>
-                <div className="text-xs sm:text-sm opacity-80">Portable Document</div>
-              </Button>
-              <Button
-                onClick={() => handleDownloadFormat("JPEG")}
-                className="h-16 sm:h-20 lg:h-24 flex flex-col items-center justify-center bg-emerald-600 hover:bg-emerald-500 text-sm sm:text-base"
-              >
-                <div className="text-base sm:text-lg lg:text-xl font-semibold">JPEG</div>
-                <div className="text-xs sm:text-sm opacity-80">Image Format</div>
-              </Button>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowDownloadOptions(false)
-                setPendingDownload(null)
-              }}
-              className="w-full min-h-[44px] sm:min-h-[48px] text-sm sm:text-base font-medium"
-            >
-              Cancel
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      
 
       {/* PIN Verification Dialog */}
-      <Dialog open={showPinDialog} onOpenChange={setShowPinDialog}>
-        <DialogContent className="glass-dark border-emerald-500/20 max-w-xs sm:max-w-md lg:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-emerald-400 text-base sm:text-lg lg:text-xl">
-              Transaction PIN Required
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 sm:space-y-6">
-            <p className="text-sm sm:text-base text-muted-foreground">
-              Please enter your 4-digit transaction PIN to download the receipt.
-            </p>
-            <div>
-              <Label htmlFor="transactionPin" className="text-sm sm:text-base">
-                Transaction PIN
-              </Label>
-              <Input
-                id="transactionPin"
-                type="password"
-                maxLength={4}
-                value={transactionPin}
-                onChange={(e) => setTransactionPin(e.target.value)}
-                className="glass-dark border-emerald-500/30 text-center min-h-[44px] sm:min-h-[48px] text-lg sm:text-xl mt-2"
-                placeholder="••••"
-              />
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <Button
-                onClick={handlePinVerification}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-500 min-h-[44px] sm:min-h-[48px] text-sm sm:text-base font-medium"
-              >
-                Verify & Download
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowPinDialog(false)
-                  setTransactionPin("")
-                  setPendingDownload(null)
-                }}
-                className="flex-1 min-h-[44px] sm:min-h-[48px] text-sm sm:text-base font-medium"
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      
     </div>
   )
 }

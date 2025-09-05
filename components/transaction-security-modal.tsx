@@ -9,6 +9,8 @@ import { Card } from "@/components/ui/card"
 import { Shield, Lock, Mail, Check, AlertCircle, ArrowRight, Clock } from "lucide-react"
 import { getCurrentUser } from "@/lib/auth"
 import { SecurityManager } from "@/lib/security"
+import { useCurrentAccountIdStore, useAccountStore } from "@/store/account-store"
+import { useUserIdStore } from "@/store/account-store"
 
 interface TransactionSecurityModalProps {
   isOpen: boolean
@@ -17,6 +19,7 @@ interface TransactionSecurityModalProps {
   transactionType: string
   transactionDetails: {
     recipient?: string
+    accountNumber?: string
     amount?: string
     account?: string
     cryptoType?: string
@@ -43,6 +46,9 @@ export function TransactionSecurityModal({
   const [isLocked, setIsLocked] = useState(false)
   const user = getCurrentUser()
   const securityManager = SecurityManager.getInstance()
+  const userAccountId = useCurrentAccountIdStore((s) => s.currentAccountId)
+  const updateAccounts = useAccountStore((s) => s.fetchAccountDetails)
+  const userId = useUserIdStore((s) => s.userId)
 
   useEffect(() => {
     if (currentStep === "email" && timeRemaining > 0) {
@@ -92,11 +98,31 @@ export function TransactionSecurityModal({
     setIsLoading(true)
     setErrors({})
 
-    setTimeout(() => {
-      setIsLoading(false)
-      const isValid = securityManager.validatePIN(pin, user?.email || "")
+    try {
+      // Verify PIN
+      const response = await fetch("/api/verify-pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin, account_id: userAccountId }),
+        credentials: "include",
+      })
+
+      if (!response.ok) {
+        // server says invalid pin
+        setErrors({ pin: "Invalid PIN. Please try again." })
+        // Also check lock status in case backend locked it
+        const nowLocked = securityManager.isAccountLocked(user?.email || "")
+        if (nowLocked) {
+          setIsLocked(true)
+          setErrors({ pin: "Account locked due to multiple failed attempts. Please try again in 15 minutes." })
+        }
+        return
+      }
+
+      const isValid = await response.json()
 
       if (!isValid) {
+        // fallback: mark as invalid
         const nowLocked = securityManager.isAccountLocked(user?.email || "")
         if (nowLocked) {
           setIsLocked(true)
@@ -104,20 +130,50 @@ export function TransactionSecurityModal({
         } else {
           setErrors({ pin: "Invalid PIN. Please try again." })
         }
-      } else {
-        const code = securityManager.generateEmailCode()
-        setExpectedEmailCode(code)
-        setCurrentStep("email")
-        setTimeRemaining(300) // Reset timer
-
-        securityManager.logSecurityEvent({
-          type: "transaction",
-          details: `PIN validated for ${transactionType}`,
-          status: "success",
-        })
+        return
       }
-    }, 1000)
-  }
+
+      // PIN is valid — send the confirmation email (keep isLoading true during this)
+      const mailResp = await fetch("/api/send-mail", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          account_id: userAccountId,
+          recipient_name: transactionDetails.recipient,
+          recipient_account_number: transactionDetails.accountNumber,
+          amount: transactionDetails.amount,
+        }),
+        credentials: "include",
+      })
+
+      if (!mailResp.ok) {
+        // preserve a helpful error
+        try {
+          const errorData = await mailResp.json()
+          console.log("sending transaction issue : ", errorData.error)
+        } catch (e) {
+          console.log("send-mail failed")
+        }
+        setErrors({ pin: "Failed to send confirmation email. Please try again." })
+        return
+      }
+
+      // Success path — move to email step
+      setCurrentStep("email")
+      setTimeRemaining(300)
+
+      securityManager.logSecurityEvent({
+        type: "transaction",
+        details: `PIN validated for ${transactionType}`,
+        status: "success",
+      })
+    } catch (error: any) {
+      console.log(error?.message ?? error)
+      setErrors({ pin: "Network error. Please try again." })
+    } finally {
+      setIsLoading(false)
+    }
+}
 
   const handleEmailSubmit = async () => {
     if (emailCode.length !== 6) {
@@ -133,9 +189,38 @@ export function TransactionSecurityModal({
     setIsLoading(true)
     setErrors({})
 
-    setTimeout(() => {
-      setIsLoading(false)
-      const isValid = securityManager.validateEmailCode(emailCode, expectedEmailCode)
+      let isValid = false;
+      //where i would put code to confirm the email code and update the balances
+      try{
+        const response = await fetch("/api/process-transaction", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+             account_id: userAccountId,
+             emailCode
+            }),
+          credentials: "include",
+        })
+        if (!response.ok){
+          setIsLoading(false)
+          const errorData = await response.json()
+          console.log(errorData.error)
+          setErrors({ email: "Invalid code" })
+          return
+        }
+        const data = await response.json()
+        isValid = true
+        setIsLoading(false)
+        
+      }
+      
+      catch(error: any){
+        setIsLoading(false)
+        console.log(error.message)
+      }
+      
 
       if (!isValid) {
         setErrors({ email: "Invalid confirmation code" })
@@ -158,12 +243,13 @@ export function TransactionSecurityModal({
           status: "success",
         })
 
-        setTimeout(() => {
+        await updateAccounts(userId)
+        //use the access store here to update the balances
           onSuccess()
           handleClose()
-        }, 2000)
+        
       }
-    }, 1000)
+  
   }
 
   const handleClose = () => {
