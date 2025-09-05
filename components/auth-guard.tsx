@@ -20,7 +20,7 @@ export function AuthGuard({ children, redirectTo = "/login" }: AuthGuardProps) {
 
   useEffect(() => {
     const checkAuth = async() => {
-      const response = await fetch("http://localhost:3000/api/login", { credentials: "include" });
+      const response = await fetch("/api/login", { credentials: "include" });
       if(!response.ok) {
         router.push(redirectTo)
         return

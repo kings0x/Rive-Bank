@@ -5,7 +5,7 @@ import { persist } from "zustand/middleware";
 async function load(data: any): Promise<Account[] | null> {
   const controller = new AbortController();
   try {
-    const res = await fetch(`http://localhost:3000/api/accounts/${data}`, {
+    const res = await fetch(`/api/accounts/${data}`, {
       signal: controller.signal,
       credentials: "include", // include cookies if your login uses session cookie
     });
