@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 
 
 
+
 export async function POST(req: Request) {
     try{
         const data = await req.json()
@@ -36,6 +37,7 @@ export async function GET(req: NextRequest) {
         const { account } = await createSessionClient();
         const user =  await account.get();
         if(!user) throw new Error("User not found");
+
         return NextResponse.json({ message: "user logged in successfully", data: user }, { status: 200 });
 
     }

@@ -9,6 +9,9 @@ import Link from "next/link"
 import { ArrowLeft, Eye, EyeOff, LogIn } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useRef, useEffect } from "react";
+import { useUserIdStore } from "@/store/account-store";
+import { Toaster, toast } from "sonner"
+
 //on reload, checks wether the user is connected if not redirects to login
 //make it get balances from the backend
 export default function LoginPage() {
@@ -22,6 +25,7 @@ export default function LoginPage() {
   const router = useRouter()
   const isMountedRef = useRef(true);
   useEffect(() => () => { isMountedRef.current = false }, []);
+  const userId = useUserIdStore(s => s.userId);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -41,7 +45,13 @@ export default function LoginPage() {
   const handleLogin = async () => {
     if (!validateForm()) return
 
+    if(userId) {
+      router.push("/dashboard");
+      return
+    };
+
     setIsLoading(true)
+    
     try{
         const response =await fetch("/api/login", {
         method: "POST",
@@ -60,8 +70,9 @@ export default function LoginPage() {
 
       const data = await response.json()
       console.log(data)
-
       router.push("/dashboard");
+      toast.success("successful");
+      
       if (isMountedRef.current) setIsLoading(false);
     }
     
@@ -81,6 +92,8 @@ export default function LoginPage() {
   }
 
   return (
+  <>
+      
     <div className="min-h-screen bg-background flex items-center justify-center p-3 sm:p-4 lg:p-6">
       {/* Animated background */}
       <div className="absolute inset-0 opacity-20">
@@ -213,5 +226,7 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  </>
+    
   )
 }

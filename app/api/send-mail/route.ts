@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { buildTransactionEmail } from "@/lib/transaction.email";
+import { buildTransactionEmail } from "@/lib/transaction";
 import { createSessionClient } from "@/lib/appwrite";
 import { generateCode } from "@/lib/security";
 import { connectDatabase } from "@/lib/appwrite";
@@ -12,8 +12,8 @@ export async function POST(request: Request) {
     try {
         //get the logged in user here and get the email
         const data = await request.json();
-        const {account_id, recipient_name, recipient_account_number, amount } = data;
-        if(!recipient_name || !recipient_account_number || !amount) return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        const {account_id, recipient_name, recipient_account_number, amount, memo } = data;
+        if(!recipient_name || !recipient_account_number || !amount ) return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
 
         const { account } = await createSessionClient();
         const user =  await account.get();
@@ -38,6 +38,7 @@ export async function POST(request: Request) {
                 code: code,
                 is_verified: false,
                 amount: Number(amount),
+                memo: memo
             }
             
         );

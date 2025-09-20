@@ -87,3 +87,69 @@ function escapeHtml(str: string) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 }
+
+
+export function generateReference() {
+  const prefixes = ["WT","DIV","RI","TR","SS","TX","PE","IP","AU","LX","FD","CR","AC"];
+  // secure/random integer 0..(max-1)
+  function randInt(max: number) {
+    // browser crypto
+    try {
+      if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+        const buf = new Uint32Array(1);
+        crypto.getRandomValues(buf);
+        return buf[0] % max;
+      }
+    } catch (e) { /* fallthrough */ }
+
+    // node crypto
+    try {
+      // eslint-disable-next-line no-undef
+      const nodeCrypto = require && require("crypto");
+      if (nodeCrypto && typeof nodeCrypto.randomInt === "function") {
+        return nodeCrypto.randomInt(0, max);
+      }
+    } catch (e) { /* fallthrough */ }
+
+    // fallback
+    return Math.floor(Math.random() * max);
+  }
+
+  const prefix = prefixes[randInt(prefixes.length)];
+  const year = new Date().getFullYear();
+  const seq = String(randInt(1_000_000)).padStart(6, "0"); // 000000 - 999999
+  return `${prefix}-${year}-${seq}`;
+}
+
+
+export interface Transaction {
+  id: string;
+  description: string;
+  amount: number;
+  date: string;
+  time: string;
+  type: "deposit" | "transfer";
+  status: string;
+  reference: string;
+  notes: string;
+  accountFrom: string;
+  accountTo: string;
+}
+
+export async function fetchTransactions(userId: string): Promise<Transaction[]> {
+  try {
+    const res = await fetch(`/api/transactions?userId=${userId}`, {
+      method: "GET",
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch transactions (${res.status})`);
+    }
+
+    const data: Transaction[] = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching transactions:", error);
+    return [];
+  }
+}

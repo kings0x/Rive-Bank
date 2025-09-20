@@ -19,7 +19,8 @@ import {
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { DashboardSection } from "@/app/dashboard/page"
-import { useAccountStore } from "@/store/account-store"
+import { useAccountStore, useUserIdStore } from "@/store/account-store"
+import { fetchTransactions } from "@/lib/transaction"
 
 
 
@@ -36,386 +37,7 @@ interface Account {
   accountNumber: string
 }
 
-const mockTransactions = [
-  {
-    id: "1",
-    description: "Corporate consultancy fee (M&A Advisory Retainer – Goldman Sachs)",
-    amount: 485000,
-    date: "2024-11-23",
-    time: "14:32:15",
-    type: "transfer",
-    status: "Completed",
-    reference: "WT-2024-001547",
-    location: "New York, NY",
-    category: "Investment",
-    fee: 25.0,
-    exchangeRate: null,
-    notes: "Corporate consultancy fee for M&A Advisory Retainer with Goldman Sachs",
-    merchant: "Goldman Sachs Group Inc.",
-    accountFrom: "Goldman Sachs ****4521",
-    accountTo: "Elite Checking ****8392",
-  },
-  {
-    id: "2",
-    description: "Law firm retainer payment (Baker & McKenzie LLP)",
-    amount: -320000,
-    date: "2025-06-03",
-    time: "09:15:22",
-    type: "transfer",
-    status: "Completed",
-    reference: "WT-2024-000892",
-    location: "London, UK",
-    category: "Legal",
-    fee: 50.0,
-    exchangeRate: null,
-    notes: "Law firm retainer payment to Baker & McKenzie LLP for ongoing legal services",
-    merchant: "Baker & McKenzie LLP",
-    accountFrom: "Elite Checking ****8392",
-    accountTo: "Baker McKenzie ****4521",
-  },
-  {
-    id: "3",
-    description: "Quarterly dividend income (Microsoft Corp.)",
-    amount: 662000,
-    date: "2024-12-12",
-    time: "16:45:33",
-    type: "deposit",
-    status: "Completed",
-    reference: "DIV-2024-003421",
-    location: "Redmond, WA",
-    category: "Dividend",
-    fee: 0,
-    exchangeRate: null,
-    notes: "Quarterly dividend income from Microsoft Corporation stock holdings",
-    merchant: "Microsoft Corporation",
-    accountFrom: "Microsoft Transfer Agent",
-    accountTo: "Elite Checking ****8392",
-  },
-  {
-    id: "4",
-    description: "Legal settlement payout (Commercial contract resolution)",
-    amount: -450000,
-    date: "2025-01-02",
-    time: "11:28:44",
-    type: "transfer",
-    status: "Completed",
-    reference: "LS-2024-001234",
-    location: "New York, NY",
-    category: "Legal",
-    fee: 100.0,
-    exchangeRate: null,
-    notes: "Legal settlement payout for commercial contract resolution dispute",
-    merchant: "Settlement Authority",
-    accountFrom: "Elite Checking ****8392",
-    accountTo: "Settlement Escrow ****9876",
-  },
-  {
-    id: "5",
-    description: "Rental income – Commercial property, London Mayfair",
-    amount: 1200000,
-    date: "2025-02-06",
-    time: "13:22:11",
-    type: "deposit",
-    status: "Completed",
-    reference: "RI-2024-000567",
-    location: "London, UK",
-    category: "Real Estate",
-    fee: 0,
-    exchangeRate: "1 GBP = $1.2547 USD",
-    notes: "Monthly rental income from commercial property in London Mayfair district",
-    merchant: "Mayfair Property Management",
-    accountFrom: "Property Management ****7890",
-    accountTo: "Elite Checking ****8392",
-  },
-  {
-    id: "6",
-    description: "Corporate travel expense – International business trip (Frankfurt & Zurich)",
-    amount: -180000,
-    date: "2025-08-16",
-    time: "10:45:12",
-    type: "transfer",
-    status: "Completed",
-    reference: "TR-2024-000234",
-    location: "Frankfurt, Germany",
-    category: "Travel",
-    fee: 25.0,
-    exchangeRate: "1 EUR = $1.0547 USD",
-    notes: "Corporate travel expenses for international business trip to Frankfurt and Zurich",
-    merchant: "Corporate Travel Services",
-    accountFrom: "Elite Checking ****8392",
-    accountTo: "Travel Services ****1234",
-  },
-  {
-    id: "7",
-    description: "Stock sale proceeds (Amazon Inc. – Equity liquidation)",
-    amount: 570000,
-    date: "2025-01-22",
-    time: "19:30:45",
-    type: "deposit",
-    status: "Completed",
-    reference: "SS-2024-000789",
-    location: "Seattle, WA",
-    category: "Investment",
-    fee: 75.0,
-    exchangeRate: null,
-    notes: "Stock sale proceeds from Amazon Inc. equity liquidation transaction",
-    merchant: "Amazon Inc.",
-    accountFrom: "Brokerage Account ****5678",
-    accountTo: "Elite Checking ****8392",
-  },
-  {
-    id: "8",
-    description: "Quarterly corporate tax payment – HMRC",
-    amount: -428000,
-    date: "2025-04-22",
-    time: "15:20:33",
-    type: "transfer",
-    status: "Completed",
-    reference: "TX-2024-000456",
-    location: "London, UK",
-    category: "Tax",
-    fee: 0,
-    exchangeRate: "1 GBP = $1.2547 USD",
-    notes: "Quarterly corporate tax payment to HM Revenue and Customs",
-    merchant: "HM Revenue & Customs",
-    accountFrom: "Elite Checking ****8392",
-    accountTo: "HMRC ****7890",
-  },
-  {
-    id: "9",
-    description: "Consulting retainer received (Wealth Advisory Client – Zurich)",
-    amount: 296000,
-    date: "2025-03-15",
-    time: "12:15:28",
-    type: "deposit",
-    status: "Completed",
-    reference: "CR-2024-000123",
-    location: "Zurich, Switzerland",
-    category: "Consulting",
-    fee: 0,
-    exchangeRate: "1 CHF = $1.0892 USD",
-    notes: "Consulting retainer received from wealth advisory client in Zurich",
-    merchant: "Zurich Wealth Advisory",
-    accountFrom: "Client Account ****2468",
-    accountTo: "Elite Checking ****8392",
-  },
-  {
-    id: "10",
-    description: "Arbitration and court settlement fees",
-    amount: -275000,
-    date: "2025-07-27",
-    time: "08:45:17",
-    type: "transfer",
-    status: "Completed",
-    reference: "AS-2024-000345",
-    location: "New York, NY",
-    category: "Legal",
-    fee: 50.0,
-    exchangeRate: null,
-    notes: "Arbitration and court settlement fees for commercial dispute resolution",
-    merchant: "Arbitration Services Inc.",
-    accountFrom: "Elite Checking ****8392",
-    accountTo: "Arbitration ****1357",
-  },
-  {
-    id: "11",
-    description: "Private equity fund distribution",
-    amount: 930000,
-    date: "2025-06-18",
-    time: "16:30:22",
-    type: "deposit",
-    status: "Completed",
-    reference: "PE-2024-000678",
-    location: "Menlo Park, CA",
-    category: "Private Equity",
-    fee: 0,
-    exchangeRate: null,
-    notes: "Private equity fund distribution from portfolio investment returns",
-    merchant: "Private Equity Fund LP",
-    accountFrom: "PE Fund ****9753",
-    accountTo: "Elite Checking ****8392",
-  },
-  {
-    id: "12",
-    description: "Corporate compliance & audit services (PwC Audit)",
-    amount: -147000,
-    date: "2025-01-30",
-    time: "14:20:55",
-    type: "transfer",
-    status: "Completed",
-    reference: "AU-2024-000890",
-    location: "London, UK",
-    category: "Professional Services",
-    fee: 25.0,
-    exchangeRate: "1 GBP = $1.2547 USD",
-    notes: "Corporate compliance and audit services provided by PwC Audit division",
-    merchant: "PricewaterhouseCoopers",
-    accountFrom: "Elite Checking ****8392",
-    accountTo: "PwC ****4682",
-  },
-  {
-    id: "13",
-    description: "IP Licensing & royalty income (Technology patents)",
-    amount: 389000,
-    date: "2025-04-05",
-    time: "11:45:33",
-    type: "deposit",
-    status: "Completed",
-    reference: "IP-2024-001234",
-    location: "San Francisco, CA",
-    category: "Intellectual Property",
-    fee: 0,
-    exchangeRate: null,
-    notes: "IP licensing and royalty income from technology patent portfolio",
-    merchant: "Tech Licensing Corp",
-    accountFrom: "Licensing ****8642",
-    accountTo: "Elite Checking ****8392",
-  },
-  {
-    id: "14",
-    description: "Legal research & subscriptions (LexisNexis, Westlaw Global)",
-    amount: -116000,
-    date: "2025-03-09",
-    time: "09:30:15",
-    type: "transfer",
-    status: "Completed",
-    reference: "LR-2024-000567",
-    location: "New York, NY",
-    category: "Professional Services",
-    fee: 15.0,
-    exchangeRate: null,
-    notes: "Legal research and subscription services for LexisNexis and Westlaw Global",
-    merchant: "LexisNexis Westlaw",
-    accountFrom: "Elite Checking ****8392",
-    accountTo: "LexisNexis ****9517",
-  },
-  {
-    id: "15",
-    description: "Real estate investment return – Commercial offices, Dubai",
-    amount: 743000,
-    date: "2024-12-28",
-    time: "10:15:44",
-    type: "deposit",
-    status: "Completed",
-    reference: "RE-2024-000789",
-    location: "Dubai, UAE",
-    category: "Real Estate",
-    fee: 0,
-    exchangeRate: "1 AED = $0.2722 USD",
-    notes: "Real estate investment return from commercial office properties in Dubai",
-    merchant: "Dubai Properties Group",
-    accountFrom: "Dubai Properties ****7531",
-    accountTo: "Elite Checking ****8392",
-  },
-  {
-    id: "16",
-    description: "Acquisition payment (Equity stake in tech startup)",
-    amount: -520000,
-    date: "2025-06-19",
-    time: "14:22:33",
-    type: "transfer",
-    status: "Completed",
-    reference: "AC-2024-000445",
-    location: "Palo Alto, CA",
-    category: "Investment",
-    fee: 50.0,
-    exchangeRate: null,
-    notes: "Acquisition payment for equity stake in emerging technology startup",
-    merchant: "TechStart Ventures",
-    accountFrom: "Elite Checking ****8392",
-    accountTo: "TechStart ****3344",
-  },
-  {
-    id: "17",
-    description: "Contract settlement income (Corporate dispute resolution)",
-    amount: 850000,
-    date: "2025-08-09",
-    time: "16:45:12",
-    type: "deposit",
-    status: "Completed",
-    reference: "CS-2024-000223",
-    location: "London, UK",
-    category: "Legal",
-    fee: 0,
-    exchangeRate: "1 GBP = $1.2547 USD",
-    notes: "Contract settlement income from successful corporate dispute resolution",
-    merchant: "Settlement Authority UK",
-    accountFrom: "Settlement ****7788",
-    accountTo: "Elite Checking ****8392",
-  },
-  {
-    id: "18",
-    description: "Luxury watch & jewelry purchase (Cartier, Geneva)",
-    amount: -78000,
-    date: "2025-04-24",
-    time: "11:30:45",
-    type: "purchase",
-    status: "Completed",
-    reference: "LX-2024-000112",
-    location: "Geneva, Switzerland",
-    category: "Luxury Goods",
-    fee: 0,
-    exchangeRate: "1 CHF = $1.0892 USD",
-    notes: "Luxury watch and jewelry purchase from Cartier boutique in Geneva",
-    merchant: "Cartier Geneva",
-    accountFrom: "Elite Checking ****8392",
-    accountTo: "Cartier ****9900",
-  },
-  {
-    id: "19",
-    description: "Automobile dealership payment (Rolls-Royce Cullinan Black Badge)",
-    amount: -575000,
-    date: "2025-08-10",
-    time: "13:25:33",
-    type: "purchase",
-    status: "Completed",
-    reference: "AU-2024-000334",
-    location: "Beverly Hills, CA",
-    category: "Luxury Goods",
-    fee: 0,
-    exchangeRate: null,
-    notes: "Automobile dealership payment for Rolls-Royce Cullinan Black Badge",
-    merchant: "Rolls-Royce Beverly Hills",
-    accountFrom: "Elite Checking ****8392",
-    accountTo: "Rolls-Royce ****5566",
-  },
-  {
-    id: "20",
-    description: "Luxury travel & hotel booking (Emirates First Class + Four Seasons Maldives)",
-    amount: -24000,
-    date: "2024-12-06",
-    time: "15:40:22",
-    type: "purchase",
-    status: "Completed",
-    reference: "TR-2024-000445",
-    location: "Dubai, UAE",
-    category: "Travel",
-    fee: 0,
-    exchangeRate: "1 AED = $0.2722 USD",
-    notes: "Luxury travel and hotel booking for Emirates First Class and Four Seasons Maldives",
-    merchant: "Emirates & Four Seasons",
-    accountFrom: "Elite Checking ****8392",
-    accountTo: "Travel Booking ****7799",
-  },
-  {
-    id: "21",
-    description: "Fine dining & private event hosting (Nobu London + Catering Services)",
-    amount: -12500,
-    date: "2025-09-08",
-    time: "19:15:44",
-    type: "purchase",
-    status: "Completed",
-    reference: "FD-2024-000556",
-    location: "London, UK",
-    category: "Entertainment",
-    fee: 0,
-    exchangeRate: "1 GBP = $1.2547 USD",
-    notes: "Fine dining and private event hosting at Nobu London with premium catering services",
-    merchant: "Nobu London",
-    accountFrom: "Elite Checking ****8392",
-    accountTo: "Nobu ****8811",
-  },
-]
+
 
 // const userAccounts = [
 //   {
@@ -442,21 +64,360 @@ const mockTransactions = [
 // ]
 
 export function AccountsOverview({ onSectionChange, onAccountSelect }: AccountsOverviewProps) {
+    const userId = useUserIdStore(s => s.userId);
+
+     useEffect(() => {
+      setUserAccounts(userAccountState)
+      let mounted = true
+
+      async function getAllTransactions() {
+        try {
+          const tx = await fetchTransactions(userId)
+          if (!mounted) return
+          setDbTransactions(Array.isArray(tx) ? tx : [])
+        } catch (err) {
+          console.error("Failed to fetch transactions", err)
+          if (!mounted) return
+          setDbTransactions([])
+        }
+      }
+
+      // only call if we have a userId (optional guard)
+      if (userId) {
+        getAllTransactions()
+      }
+
+      return () => {
+        mounted = false
+      }
+    }, [userId])
+
+
+const [dbTransactions, setDbTransactions] = useState<any[] | null>(null)
+  console.log("all transactions", dbTransactions)
+
+  const mockTransactions = [
+   ...(Array.isArray(dbTransactions)? dbTransactions : []), 
+
+  {
+    id: "21",
+    description: "Transfer to Nobu London — Private dining & event hosting",
+    amount: -12500,
+    date: "2025-09-07",
+    time: "19:15:44",
+    type: "transfer",
+    status: "Completed",
+    reference: "FD-2024-000556",
+    exchangeRate: "1 GBP = $1.2547 USD",
+    notes: "Fine dining and private event hosting at Nobu London with premium catering services",
+    accountFrom: "Elite Checking ****8392",
+    accountTo: "Nobu ****8811",
+  },
+  {
+    id: "17",
+    description: "Transfer from Settlement Authority UK — Contract settlement proceeds",
+    amount: 850000,
+    date: "2025-09-05",
+    time: "16:45:12",
+    type: "deposit",
+    status: "Completed",
+    reference: "CS-2024-000223",
+    exchangeRate: "1 GBP = $1.2547 USD",
+    notes: "Contract settlement income from successful corporate dispute resolution",
+    accountFrom: "Settlement ****7788",
+    accountTo: "Elite Checking ****8392",
+  },
+  {
+    id: "11",
+    description: "Transfer from Private Equity Fund LP — Fund distribution",
+    amount: 930000,
+    date: "2025-09-02",
+    time: "16:30:22",
+    type: "deposit",
+    status: "Completed",
+    reference: "PE-2024-000678",
+    exchangeRate: null,
+    notes: "Private equity fund distribution from portfolio investment returns",
+    accountFrom: "PE Fund ****9753",
+    accountTo: "Elite Checking ****8392",
+  },
+  {
+    id: "2",
+    description: "Transfer to Baker & McKenzie ",
+    amount: -320000,
+    date: "2025-08-30",
+    time: "09:15:22",
+    type: "transfer",
+    status: "Completed",
+    reference: "WT-2024-000892",
+    exchangeRate: null,
+    notes: "Law firm retainer payment to Baker & McKenzie LLP for ongoing legal services",
+    accountFrom: "Elite Checking ****8392",
+    accountTo: "Baker McKenzie ****4521",
+  },
+  {
+    id: "16",
+    description: "Transfer to TechStart Ventures — Acquisition payment (equity stake)",
+    amount: -520000,
+    date: "2025-08-27",
+    time: "14:22:33",
+    type: "transfer",
+    status: "Completed",
+    reference: "AC-2024-000445",
+    exchangeRate: null,
+    notes: "Acquisition payment for equity stake in emerging technology startup",
+    accountFrom: "Elite Checking ****8392",
+    accountTo: "TechStart ****3344",
+  },
+  {
+    id: "6",
+    description: "Transfer to Travel Services — International corporate travel expense (Frankfurt & Zurich)",
+    amount: -180000,
+    date: "2025-08-24",
+    time: "10:45:12",
+    type: "transfer",
+    status: "Completed",
+    reference: "TR-2024-000234",
+    exchangeRate: "1 EUR = $1.0547 USD",
+    notes: "Corporate travel expenses for international business trip to Frankfurt and Zurich",
+    accountFrom: "Elite Checking ****8392",
+    accountTo: "Travel Services ****1234",
+  },
+  {
+    id: "10",
+    description: "Transfer to Arbitration Services Inc. — Arbitration & court settlement fees",
+    amount: -275000,
+    date: "2025-08-20",
+    time: "08:45:17",
+    type: "transfer",
+    status: "Completed",
+    reference: "AS-2024-000345",
+    exchangeRate: null,
+    notes: "Arbitration and court settlement fees for commercial dispute resolution",
+    accountFrom: "Elite Checking ****8392",
+    accountTo: "Arbitration ****1357",
+  },
+  {
+    id: "19",
+    description: "Transfer to Rolls-Royce Beverly Hills — Automobile acquisition (Cullinan Black Badge)",
+    amount: -575000,
+    date: "2025-08-17",
+    time: "13:25:33",
+    type: "transfer",
+    status: "Completed",
+    reference: "AU-2024-000334",
+    exchangeRate: null,
+    notes: "Automobile dealership payment for Rolls-Royce Cullinan Black Badge",
+    accountFrom: "Elite Checking ****8392",
+    accountTo: "Rolls-Royce ****5566",
+  },
+  {
+    id: "5",
+    description: "Transfer from Mayfair Property Management — Commercial lease collection",
+    amount: 1200000,
+    date: "2025-08-14",
+    time: "13:22:11",
+    type: "deposit",
+    status: "Completed",
+    reference: "RI-2024-000567",
+    exchangeRate: "1 GBP = $1.2547 USD",
+    notes: "Monthly rental income from commercial property in London Mayfair district",
+    accountFrom: "Property Management ****7890",
+    accountTo: "Elite Checking ****8392",
+  },
+  {
+    id: "9",
+    description: "Transfer from Zurich Wealth Advisory — Consulting retainer",
+    amount: 296000,
+    date: "2025-08-10",
+    time: "12:15:28",
+    type: "deposit",
+    status: "Completed",
+    reference: "CR-2024-000123",
+    exchangeRate: "1 CHF = $1.0892 USD",
+    notes: "Consulting retainer received from wealth advisory client in Zurich",
+    accountFrom: "Client Account ****2468",
+    accountTo: "Elite Checking ****8392",
+  },
+  {
+    id: "8",
+    description: "Transfer to HM Revenue & Customs — Quarterly corporate tax remittance",
+    amount: -428000,
+    date: "2025-08-06",
+    time: "15:20:33",
+    type: "transfer",
+    status: "Completed",
+    reference: "TX-2024-000456",
+    exchangeRate: "1 GBP = $1.2547 USD",
+    notes: "Quarterly corporate tax payment to HM Revenue and Customs",
+    accountFrom: "Elite Checking ****8392",
+    accountTo: "HMRC ****7890",
+  },
+  {
+    id: "3",
+    description: "Transfer from Microsoft Corporation — Quarterly dividend distribution",
+    amount: 662000,
+    date: "2025-08-02",
+    time: "16:45:33",
+    type: "deposit",
+    status: "Completed",
+    reference: "DIV-2024-003421",
+    exchangeRate: null,
+    notes: "Quarterly dividend income from Microsoft Corporation stock holdings",
+    accountFrom: "Microsoft Transfer Agent",
+    accountTo: "Elite Checking ****8392",
+  },
+  {
+    id: "13",
+    description: "Transfer from Tech Licensing Corp — IP licensing & royalty income",
+    amount: 389000,
+    date: "2025-07-29",
+    time: "11:45:33",
+    type: "deposit",
+    status: "Completed",
+    reference: "IP-2024-001234",
+    exchangeRate: null,
+    notes: "IP licensing and royalty income from technology patent portfolio",
+    accountFrom: "Licensing ****8642",
+    accountTo: "Elite Checking ****8392",
+  },
+  {
+    id: "1",
+    description: "Transfer to Goldman Sachs — Strategic M&A advisory retainer",
+    amount: -485000,
+    date: "2025-07-25",
+    time: "14:32:15",
+    type: "transfer",
+    status: "Completed",
+    reference: "WT-2024-001547",
+    exchangeRate: null,
+    notes: "Corporate consultancy fee for M&A Advisory Retainer with Goldman Sachs",
+    accountFrom: "Elite Checking ****8392",
+    accountTo: "Goldman Sachs ****4521",
+  },
+  {
+    id: "4",
+    description: "Transfer to Settlement Escrow — Commercial contract settlement payout",
+    amount: -450000,
+    date: "2025-07-21",
+    time: "11:28:44",
+    type: "transfer",
+    status: "Completed",
+    reference: "LS-2024-001234",
+    exchangeRate: null,
+    notes: "Legal settlement payout for commercial contract resolution dispute",
+    accountFrom: "Elite Checking ****8392",
+    accountTo: "Settlement Escrow ****9876",
+  },
+  {
+    id: "12",
+    description: "Transfer to PwC — Corporate audit & compliance services",
+    amount: -147000,
+    date: "2025-07-17",
+    time: "14:20:55",
+    type: "transfer",
+    status: "Completed",
+    reference: "AU-2024-000890",
+    exchangeRate: "1 GBP = $1.2547 USD",
+    notes: "Corporate compliance and audit services provided by PwC Audit division",
+    accountFrom: "Elite Checking ****8392",
+    accountTo: "PwC ****4682",
+  },
+  {
+    id: "14",
+    description: "Transfer to LexisNexis — Legal research & subscriptions",
+    amount: -116000,
+    date: "2025-07-13",
+    time: "09:30:15",
+    type: "transfer",
+    status: "Completed",
+    reference: "LR-2024-000567",
+    exchangeRate: null,
+    notes: "Legal research and subscription services for LexisNexis and Westlaw Global",
+    accountFrom: "Elite Checking ****8392",
+    accountTo: "LexisNexis ****9517",
+  },
+  {
+    id: "15",
+    description: "Transfer from Dubai Properties Group — Real estate investment return",
+    amount: 743000,
+    date: "2025-07-09",
+    time: "10:15:44",
+    type: "deposit",
+    status: "Completed",
+    reference: "RE-2024-000789",
+    exchangeRate: "1 AED = $0.2722 USD",
+    notes: "Real estate investment return from commercial office properties in Dubai",
+    accountFrom: "Dubai Properties ****7531",
+    accountTo: "Elite Checking ****8392",
+  },
+  {
+    id: "7",
+    description: "Transfer from Brokerage Account — Equity liquidation proceeds (Amazon Inc.)",
+    amount: 570000,
+    date: "2025-07-05",
+    time: "19:30:45",
+    type: "deposit",
+    status: "Completed",
+    reference: "SS-2024-000789",
+    exchangeRate: null,
+    notes: "Stock sale proceeds from Amazon Inc. equity liquidation transaction",
+    accountFrom: "Brokerage Account ****5678",
+    accountTo: "Elite Checking ****8392",
+  },
+  {
+    id: "18",
+    description: "Transfer to Cartier Geneva — Luxury timepiece & jewelry purchase",
+    amount: -78000,
+    date: "2025-06-30",
+    time: "11:30:45",
+    type: "transfer",
+    status: "Completed",
+    reference: "LX-2024-000112",
+    exchangeRate: "1 CHF = $1.0892 USD",
+    notes: "Luxury watch and jewelry purchase from Cartier boutique in Geneva",
+    accountFrom: "Elite Checking ****8392",
+    accountTo: "Cartier ****9900",
+  },
+  {
+    id: "20",
+    description: "Transfer to Emirates & Four Seasons — Luxury travel & resort package",
+    amount: -24000,
+    date: "2025-06-15",
+    time: "15:40:22",
+    type: "transfer",
+    status: "Completed",
+    reference: "TR-2024-000445",
+    exchangeRate: "1 AED = $0.2722 USD",
+    notes: "Luxury travel and hotel booking for Emirates First Class and Four Seasons Maldives",
+    accountFrom: "Elite Checking ****8392",
+    accountTo: "Travel Booking ****7799",
+  },
+
+
+]
+
+
   const [balancesVisible, setBalancesVisible] = useState(true)
   const [selectedTransaction, setSelectedTransaction] = useState<(typeof mockTransactions)[0] | null>(null)
-  const [transactions, setTransactions] = useState(mockTransactions.slice(0, 8)) // Show 8 transactions initially instead of 5
-  const [showAllTransactions, setShowAllTransactions] = useState(false)
+  const [transactions, setTransactions] = useState(mockTransactions.slice(0,8)) // Show 8 transactions initially instead of 5
+const [showAllTransactions, setShowAllTransactions] = useState(false)
   const [lastUpdate, setLastUpdate] = useState(new Date())
-  const [showPinDialog, setShowPinDialog] = useState(false)
   const [transactionPin, setTransactionPin] = useState("")
   const [pendingDownload, setPendingDownload] = useState<(typeof mockTransactions)[0] | null>(null)
   const [showDownloadOptions, setShowDownloadOptions] = useState(false)
   const [userAccounts, setUserAccounts] = useState<Account[]>([])
   const userAccountState = useAccountStore((s) => s.accountDetails);
 
-   useEffect(() => {
-     setUserAccounts(userAccountState);
-  }, [])
+const combinedTransactions = [
+  ...(Array.isArray(dbTransactions) ? dbTransactions : []),
+  ...mockTransactions,
+].filter((t, idx, arr) => arr.findIndex(x => x.id === t.id) === idx)
+
+const displayedTransactions = showAllTransactions
+  ? combinedTransactions
+  : combinedTransactions.slice(0, 8)
+
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -495,15 +456,9 @@ export function AccountsOverview({ onSectionChange, onAccountSelect }: AccountsO
     // In a real app, you'd show a toast notification
   }
 
-  const handleViewAllTransactions = () => {
-    if (!showAllTransactions) {
-      setTransactions(mockTransactions) // Show all transactions
-      setShowAllTransactions(true)
-    } else {
-      setTransactions(mockTransactions.slice(0, 8)) // Show first 8 instead of 5
-      setShowAllTransactions(false)
-    }
-  }
+const handleViewAllTransactions = () => {
+  setShowAllTransactions(prev => !prev)
+}
 
 
   const totalBalance = userAccounts.reduce((sum, account) => sum + account.balance, 0)
@@ -599,8 +554,8 @@ export function AccountsOverview({ onSectionChange, onAccountSelect }: AccountsO
             {showAllTransactions ? "Show Less" : "View All"}
           </Button>
         </div>
-        <div className="space-y-2 sm:space-y-3 lg:space-y-4">
-          {transactions.map((transaction) => (
+        {dbTransactions ? <div className="space-y-2 sm:space-y-3 lg:space-y-4">
+          {displayedTransactions.map((transaction) => (
             <div
               key={transaction.id}
               className="flex items-center justify-between p-3 sm:p-4 lg:p-6 rounded-lg hover:bg-emerald-500/5 transition-colors cursor-pointer border border-transparent hover:border-emerald-500/20 min-h-[60px] sm:min-h-[70px] lg:min-h-[80px] gap-3 sm:gap-4"
@@ -622,7 +577,7 @@ export function AccountsOverview({ onSectionChange, onAccountSelect }: AccountsO
                   <p className="font-medium text-sm sm:text-base lg:text-lg truncate">{transaction.description}</p>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-1">
                     <p className="text-xs sm:text-sm text-muted-foreground">{transaction.date}</p>
-                    <p className="text-xs sm:text-sm text-muted-foreground capitalize">{transaction.category}</p>
+                    
                   </div>
                 </div>
               </div>
@@ -637,7 +592,31 @@ export function AccountsOverview({ onSectionChange, onAccountSelect }: AccountsO
               </div>
             </div>
           ))}
-        </div>
+        </div>:
+            <>
+              <div className="space-y-2 sm:space-y-3 lg:space-y-4">
+                {[...Array(5)].map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-3 sm:p-4 lg:p-6 rounded-lg border border-transparent min-h-[60px] sm:min-h-[70px] lg:min-h-[80px] gap-3 sm:gap-4 animate-pulse bg-muted/40"
+                  >
+                    <div className="flex items-center gap-3 sm:gap-4 lg:gap-6 min-w-0 flex-1">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-full bg-muted flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <div className="h-4 sm:h-5 lg:h-6 bg-muted rounded w-3/4 mb-2" />
+                        <div className="h-3 sm:h-4 bg-muted rounded w-1/2" />
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0 space-y-2">
+                      <div className="h-4 sm:h-5 lg:h-6 bg-muted rounded w-16 sm:w-20 lg:w-24 ml-auto" />
+                      <div className="h-3 sm:h-4 bg-muted rounded w-10 sm:w-12 ml-auto" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+        
+        }
       </Card>
 
       {/* Enhanced Transaction Details Modal */}
@@ -677,9 +656,7 @@ export function AccountsOverview({ onSectionChange, onAccountSelect }: AccountsO
                     <p className="font-semibold text-base sm:text-lg lg:text-xl break-words">
                       {selectedTransaction.description}
                     </p>
-                    <p className="text-sm sm:text-base text-muted-foreground break-words mt-1">
-                      {selectedTransaction.merchant}
-                    </p>
+                    
                     <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-400 mt-2 text-xs sm:text-sm">
                       {selectedTransaction.status}
                     </Badge>
@@ -691,7 +668,7 @@ export function AccountsOverview({ onSectionChange, onAccountSelect }: AccountsO
                       {selectedTransaction.amount > 0 ? "+" : ""}
                       {formatCurrency(selectedTransaction.amount)}
                     </p>
-                    <p className="text-sm sm:text-base text-muted-foreground mt-1">{selectedTransaction.category}</p>
+                    
                   </div>
                 </div>
 
@@ -728,23 +705,11 @@ export function AccountsOverview({ onSectionChange, onAccountSelect }: AccountsO
                       </p>
                     </div>
 
-                    <div>
-                      <div className="flex items-center space-x-2 mb-2 sm:mb-3">
-                        <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 flex-shrink-0" />
-                        <p className="text-sm sm:text-base font-medium text-emerald-400">Location</p>
-                      </div>
-                      <p className="text-sm sm:text-base break-words">{selectedTransaction.location}</p>
-                    </div>
+                    
                   </div>
 
                   <div className="space-y-4 sm:space-y-6">
-                    <div>
-                      <div className="flex items-center space-x-2 mb-2 sm:mb-3">
-                        <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 flex-shrink-0" />
-                        <p className="text-sm sm:text-base font-medium text-emerald-400">Transaction Fee</p>
-                      </div>
-                      <p className="text-sm sm:text-base">{formatCurrency(selectedTransaction.fee)}</p>
-                    </div>
+                    
 
                     {selectedTransaction.exchangeRate && (
                       <div>

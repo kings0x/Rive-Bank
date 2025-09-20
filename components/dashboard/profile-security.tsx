@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { getCurrentUser } from "@/lib/auth"
 import { SecurityAudit } from "./security-audit"
 import { User, Shield, Key, Smartphone, Mail, Check } from "lucide-react"
+import { useAccountStore } from "@/store/account-store"
 
 interface ProfileSecurityProps {
   activeTab: "profile" | "security"
@@ -46,6 +47,7 @@ export function ProfileSecurity({ activeTab, onTabChange }: ProfileSecurityProps
     newPin: "",
     confirmPin: "",
   })
+  const accountDetails = useAccountStore((s) => s.accountDetails)
 
   const updateProfileData = (field: string, value: string) => {
     setProfileData((prev) => ({ ...prev, [field]: value }))
@@ -65,10 +67,35 @@ export function ProfileSecurity({ activeTab, onTabChange }: ProfileSecurityProps
     }
   }
 
-  const handlePinVerification = () => {
+  const handlePinVerification = async() => {
+    
+
     if (transactionPin.length === 4) {
       if (currentAction === "save-profile") {
         if (emailPin.length === 6) {
+          const response = await fetch("/api/update-profile", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              emailPin: emailPin,
+              pin: transactionPin
+            }),
+          })
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            
+            if(errorData.error === "Incorrect EmailCode or Pin") {
+              alert("Email or Pin is Incorrect!");
+              return;
+            }
+            alert("Profile information NOT updated");
+            console.log(errorData.error);
+            return
+          }
           setShowPinDialog(false)
           setIsEditing(false)
           setTransactionPin("")
@@ -79,6 +106,30 @@ export function ProfileSecurity({ activeTab, onTabChange }: ProfileSecurityProps
         }
       } else if (currentAction === "update-password") {
         if (emailPin.length === 6) {
+          const response = await fetch("/api/update-password", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              oldPassword: passwordData.currentPassword,
+              newPassword: passwordData.newPassword,
+              emailPin: emailPin
+            }),
+          })
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            
+            if(errorData.error === "Incorrect EmailCode or Pin") {
+              alert("Email or Pin is Incorrect!");
+              return;
+            }
+            alert("Password is incorrect!");
+            console.log(errorData.error);
+            return
+          }
           setShowPinDialog(false)
           setTransactionPin("")
           setEmailPin("")
@@ -89,6 +140,31 @@ export function ProfileSecurity({ activeTab, onTabChange }: ProfileSecurityProps
         }
       } else if (currentAction === "update-pin") {
         if (emailPin.length === 6) {
+          const response = await fetch("/api/confirm-pin-change", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              pin: transactionPin,
+              emailPin: emailPin,
+              accounts: accountDetails,
+            }),
+            credentials: "include",
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            if (errorData.error === "Incorrect PIN") {
+              alert("pin is incorrect!");
+              return;
+            }
+            if(errorData.error === "Invalid email pin") {
+              alert("email pin is incorrect!");
+              return;
+            }
+            console.log(errorData.error);
+          }
           setShowPinDialog(false)
           setTransactionPin("")
           setEmailPin("")
@@ -103,12 +179,31 @@ export function ProfileSecurity({ activeTab, onTabChange }: ProfileSecurityProps
     }
   }
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async() => {
+    const response = await fetch("/api/verify-profile", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        accounts: accountDetails,
+      }),
+      credentials: "include"
+    })
+
+    if(!response.ok){
+      const errorData = await response.json()
+      if(errorData){
+        alert("Validation Error")
+        console.log(errorData.error)
+        return
+      }
+    }
     setCurrentAction("save-profile")
     setShowPinDialog(true)
   }
 
-  const handleUpdatePassword = () => {
+  const handleUpdatePassword = async() => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       alert("New passwords do not match!")
       return
@@ -117,11 +212,34 @@ export function ProfileSecurity({ activeTab, onTabChange }: ProfileSecurityProps
       alert("Password must be at least 8 characters long!")
       return
     }
+
+    const response = await fetch("/api/verify-change-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        accounts: accountDetails,
+      }),
+      credentials: "include"
+    })
+
+    if(!response.ok){
+      const errorData = await response.json()
+      if(errorData){
+        alert("Validation Error")
+        console.log(errorData.error)
+        return
+      }
+      
+    }
+
+
     setCurrentAction("update-password")
     setShowPinDialog(true)
   }
 
-  const handleUpdatePin = () => {
+  const handleUpdatePin = async() => {
     if (pinData.newPin !== pinData.confirmPin) {
       alert("New PINs do not match!")
       return
@@ -130,6 +248,30 @@ export function ProfileSecurity({ activeTab, onTabChange }: ProfileSecurityProps
       alert("PIN must be exactly 4 digits!")
       return
     }
+
+    const response = await fetch("/api/verify-change-pin", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        accounts: accountDetails,
+        pin: pinData.currentPin
+      })
+    })
+
+    if(!response.ok){
+      const errorData = await response.json()
+      if(errorData.error === "Incorrect PIN"){
+        alert("Current pin is incorrect!")
+        return
+      }
+      console.log(process.env.DATABASE_ID,
+            process.env.USER_ACCOUNT_COLLECTION_ID,)
+      console.log(errorData.error)
+      return
+    }
+
     setCurrentAction("update-pin")
     setShowPinDialog(true)
   }

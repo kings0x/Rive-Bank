@@ -25,6 +25,7 @@ interface TransactionSecurityModalProps {
     cryptoType?: string
     address?: string
   }
+  accountIdd?: string
 }
 
 type SecurityStep = "pin" | "email" | "success"
@@ -35,6 +36,7 @@ export function TransactionSecurityModal({
   onSuccess,
   transactionType,
   transactionDetails,
+  accountIdd
 }: TransactionSecurityModalProps) {
   const [currentStep, setCurrentStep] = useState<SecurityStep>("pin")
   const [pin, setPin] = useState("")
@@ -100,16 +102,22 @@ export function TransactionSecurityModal({
 
     try {
       // Verify PIN
+      console.log("userAccountId", accountIdd)
       const response = await fetch("/api/verify-pin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin, account_id: userAccountId }),
+        body: JSON.stringify({ pin, account_id: userAccountId, type: transactionDetails.cryptoType }),
         credentials: "include",
       })
 
       if (!response.ok) {
         // server says invalid pin
-        setErrors({ pin: "Invalid PIN. Please try again." })
+        const errorData =  await response.json();
+        if(errorData.error === "Incorrect PIN") {
+          setErrors({ pin: "Invalid PIN. Please try again." })
+        }
+        
+        alert("Account has Been restricted")
         // Also check lock status in case backend locked it
         const nowLocked = securityManager.isAccountLocked(user?.email || "")
         if (nowLocked) {

@@ -9,7 +9,7 @@ import { CryptoSection } from "@/components/dashboard/crypto-section"
 import { CardsSection } from "@/components/dashboard/cards-section"
 import { ProfileSecurity } from "@/components/dashboard/profile-security"
 import { AccountDetails } from "@/components/dashboard/account-details"
-import { CustomerSupport } from "@/components/dashboard/customer-support"
+
 
 export type DashboardSection =
   | "accounts"
@@ -44,8 +44,6 @@ export default function DashboardPage() {
         return <ProfileSecurity activeTab={activeSection} onTabChange={handleProfileSecurityTabChange} />
       case "account-details":
         return <AccountDetails accountId={selectedAccountId} onBack={() => setActiveSection("accounts")} />
-      case "support":
-        return <CustomerSupport />
       default:
         return <AccountsOverview onSectionChange={setActiveSection} onAccountSelect={(id: string | null) => setSelectedAccountId(id)} />
     }

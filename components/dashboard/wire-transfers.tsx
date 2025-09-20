@@ -51,13 +51,11 @@ export function WireTransfers() {
       }
     }
   }
-
+  let userAccount;
   const validateForm = async() => {
     console.log("formData.fromAccount", formData.fromAccount)
     const newErrors: Record<string, string> = {}
-    let userAccount
     if (!formData.fromAccount) newErrors.fromAccount = "Please select an account"
-    
     userAccount = findAccount(formData.fromAccount)
     console.log("userAccount", userAccount)
     setIdStore(userAccount ? userAccount.id : "")
@@ -73,6 +71,7 @@ export function WireTransfers() {
     const recipient_name = formData.recipientName
     const routing_number = formData.routingNumber
     const amount = Number.parseInt(formData.amount || "0", 10)
+    const memo = formData.memo
 
     try{
 
@@ -86,7 +85,8 @@ export function WireTransfers() {
           recipient_account_number,
           recipient_name,
           routing_number,
-          amount
+          amount,
+          memo
         })
       })
       if(!response.ok){
@@ -289,27 +289,7 @@ export function WireTransfers() {
           </div>
         </div>
       </Card>
-
-      {/* Recent Wire Transfers */}
-      <Card className="glass p-6 border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
-        <h3 className="font-serif text-xl font-semibold mb-4 text-emerald-400">Recent Wire Transfers</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-lg bg-white/5">
-            <div>
-              <p className="font-medium">Goldman Sachs Private Wealth</p>
-              <p className="text-sm text-muted-foreground">Jan 15, 2025 • Completed</p>
-            </div>
-            <p className="font-semibold">-$2,500,000.00</p>
-          </div>
-          <div className="flex items-center justify-between p-4 rounded-lg bg-white/5">
-            <div>
-              <p className="font-medium">Morgan Stanley Investment</p>
-              <p className="text-sm text-muted-foreground">Jan 12, 2025 • Completed</p>
-            </div>
-            <p className="font-semibold">-$1,750,000.00</p>
-          </div>
-        </div>
-      </Card>
+  
 
       <TransactionSecurityModal
         isOpen={showSecurityModal}
@@ -322,6 +302,7 @@ export function WireTransfers() {
           amount: formData.amount,
           account: formData.fromAccount,
         }}
+        accountIdd={userAccount}
         
       />
     </div>

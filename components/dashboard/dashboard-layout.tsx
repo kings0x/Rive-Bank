@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import type { DashboardSection } from "@/app/dashboard/page"
 import { Home, ArrowUpDown, Bitcoin, CreditCard, User, Shield, LogOut, Menu, X, Crown, Headphones } from "lucide-react"
 import { useState } from "react"
+import { log } from "console"
+import { toast } from "sonner"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -20,15 +22,30 @@ const navigationItems = [
   { key: "cards" as DashboardSection, label: "Cards", icon: CreditCard },
   { key: "profile" as DashboardSection, label: "Profile", icon: User },
   { key: "security" as DashboardSection, label: "Security", icon: Shield },
-  { key: "support" as DashboardSection, label: "Customer Support", icon: Headphones },
 ]
 
 export function DashboardLayout({ children, activeSection, onSectionChange }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [logoutClicked, setLogoutClicked] = useState(false)
   const user = getCurrentUser()
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async() => {
+    setLogoutClicked(true)
+    try{
+      const response = await fetch("/api/logout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+       credentials: "include" 
+      });
+      toast.error("successfully logged out");
+      logout()
+    }
+    catch(error){
+      setLogoutClicked(false)
+      console.log(error)
+    }
   }
 
   return (
@@ -116,14 +133,48 @@ export function DashboardLayout({ children, activeSection, onSectionChange }: Da
                 </div>
               </div>
             )}
-            <Button
+            {
+              logoutClicked ?
+
+              <Button
+                disabled
+                variant="outline"
+                className="w-full glass-dark bg-transparent border-destructive/50 text-destructive text-sm sm:text-base min-h-[48px] sm:min-h-[52px] transition-all duration-200 flex items-center justify-center"
+              >
+                <svg
+                  className="animate-spin h-4 w-4 mr-2 sm:mr-3 text-destructive"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                  ></path>
+                </svg>
+                <span className="font-medium">Logging out...</span>
+              </Button>
+            :
+              <Button
               onClick={handleLogout}
               variant="outline"
-              className="w-full glass-dark bg-transparent border-destructive/50 text-destructive hover:bg-destructive/10 text-sm sm:text-base min-h-[48px] sm:min-h-[52px] transition-all duration-200"
+              className="w-full cursor-pointer glass-dark bg-transparent border-destructive/50 text-destructive hover:bg-destructive/10 text-sm sm:text-base min-h-[48px] sm:min-h-[52px] transition-all duration-200"
             >
               <LogOut className="w-4 h-4 mr-2 sm:mr-3" />
               <span className="font-medium">Logout</span>
             </Button>
+            
+  
+          }
           </div>
         </div>
       </div>

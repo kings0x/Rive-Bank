@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDatabase } from "@/lib/appwrite";
 import { Query } from "node-appwrite";
+import { generateReference } from "@/lib/transaction";
 
 export async function POST(req: Request) {
   try {
@@ -62,6 +63,8 @@ export async function POST(req: Request) {
 
     const sender = accountResult.documents[0];
     const senderBalance = Number(sender.balance);
+    const accountNumber = sender.account_number;
+    const senderAccountNumber = `****${accountNumber.slice(-4)}`;
 
     if (isNaN(senderBalance)) {
     //   console.warn("Sender balance invalid", sender);
@@ -128,13 +131,20 @@ export async function POST(req: Request) {
       );
       return NextResponse.json({ error: "Transaction did not go through (recipient update failed)" }, { status: 400 });
     }
-
+    const reference_number = generateReference();
+    //update the transaction
     await database.updateDocument(
       process.env.DATABASE_ID!,
       process.env.TRANSACTION_COLLECTION_ID!,
       transaction_id,
-      { is_verified: true, status: "completed" }
+      { 
+        is_verified: true, 
+        status: "completed",
+        from: senderAccountNumber, 
+        type: "transfer",
+      }
     );
+    //do that every transfer that the type is transfer would have a minus applied on the account
 
     return NextResponse.json({ message: "Email verified & Transaction processed successfully" }, { status: 200 });
   } catch (error: any) {

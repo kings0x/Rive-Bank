@@ -1,6 +1,7 @@
+// keep "use client" and your imports
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,14 +9,18 @@ import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Copy, QrCode, ArrowUpRight, ArrowDownLeft, Bitcoin, Coins, Send, Download } from "lucide-react"
 import { TransactionSecurityModal } from "@/components/transaction-security-modal"
+import { isValidBTC, isValidETH } from "@/lib/utils"
+import { useUserIdStore } from "@/store/account-store"
+import { useCurrentAccountIdStore } from "@/store/account-store"
 
+// keep mock balances (or replace with a real balance fetch later)
 const mockCryptoBalances = [
   {
     symbol: "BTC",
     name: "Bitcoin",
     balance: 12.847392,
     usdValue: 1284739.2,
-    address: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
+    address: "bc1qleym8xef3n76cmrn25hzdede4fha8df9utyzv8",
     icon: Bitcoin,
   },
   {
@@ -23,7 +28,7 @@ const mockCryptoBalances = [
     name: "Ethereum",
     balance: 847.392,
     usdValue: 2847392.1,
-    address: "0x742d35Cc6634C0532925a3b8D4C2C4e4C4C4C4C4",
+    address: "0x9A250beca3b146C611feF6c5d2ca3Ccf3A39Fe78",
     icon: Coins,
   },
   {
@@ -31,58 +36,21 @@ const mockCryptoBalances = [
     name: "USD Coin",
     balance: 5847392.45,
     usdValue: 5847392.45,
-    address: "0x847d35Cc6634C0532925a3b8D4C2C4e4C4C4C4C4",
+    address: "0x9A250beca3b146C611feF6c5d2ca3Ccf3A39Fe78",
     icon: Coins,
   },
 ]
 
-const mockCryptoTransactions = [
-  {
-    id: "1",
-    type: "receive",
-    symbol: "BTC",
-    amount: 2.5,
-    usdValue: 125000,
-    date: "2025-01-15",
-    hash: "a1b2c3d4e5f6...",
-  },
-  {
-    id: "2",
-    type: "send",
-    symbol: "ETH",
-    amount: -50.0,
-    usdValue: -168000,
-    date: "2025-01-14",
-    hash: "f6e5d4c3b2a1...",
-  },
-  {
-    id: "3",
-    type: "receive",
-    symbol: "USDC",
-    amount: 100000,
-    usdValue: 100000,
-    date: "2025-01-13",
-    hash: "1a2b3c4d5e6f...",
-  },
-  {
-    id: "4",
-    type: "send",
-    symbol: "BTC",
-    amount: -1.2,
-    usdValue: -60000,
-    date: "2025-01-12",
-    hash: "9z8y7x6w5v4u...",
-  },
-  {
-    id: "5",
-    type: "receive",
-    symbol: "ETH",
-    amount: 25.0,
-    usdValue: 84000,
-    date: "2025-01-11",
-    hash: "m1n2o3p4q5r6...",
-  },
-]
+type Tx = {
+  id: string
+  type: "receive" | "send"
+  symbol: string
+  amount: number
+  usdValue: number
+  date?: string
+  hash?: string
+  // add other fields you store in Appwrite (createdAt etc)
+}
 
 export function CryptoSection() {
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
@@ -90,12 +58,119 @@ export function CryptoSection() {
   const [showSendModal, setShowSendModal] = useState<string | null>(null)
   const [showSecurityModal, setShowSecurityModal] = useState(false)
   const [showAllTransactions, setShowAllTransactions] = useState(false)
+  const [cryptoAccount, setCryptoAccount] = useState<any>()
   const [sendFormData, setSendFormData] = useState({
     recipientAddress: "",
     amount: "",
     memo: "",
   })
   const [sendCrypto, setSendCrypto] = useState<string>("")
+  const userId = useUserIdStore((s) => s.userId)
+  const setIdStore = useCurrentAccountIdStore((s) => s.setCurrentAccountId)
+
+  // NEW: transactions state + loading + error
+  const [transactions, setTransactions] = useState<Tx[] | null>(null)
+  const [txLoading, setTxLoading] = useState<boolean>(false)
+  const [txError, setTxError] = useState<string | null>(null)
+
+  const totalCryptoValue = cryptoAccount?.reduce((sum: any, crypto: any) => sum + crypto.usdValue, 0)
+
+  // compute displayed transactions
+  const displayedTransactions = transactions
+    ? showAllTransactions
+      ? transactions
+      : transactions.slice(0, 3)
+    : []
+  
+  function getBalanceBySymbol(symbol: string) {
+    const acct = cryptoAccount?.find((b: any) => b.symbol === symbol)
+    return acct ? acct.balance : 0
+  }
+
+  function getUSDValueBySymbol(symbol: string) {
+    const acct = cryptoAccount?.find((b: any) => b.symbol === symbol)
+    return acct ? acct.usdValue : 0
+  }
+
+  function getUserIdFromSymbol(symbol: string) {
+    const acct = cryptoAccount?.find((b: any) => b.symbol === symbol)
+    return acct ? acct.id : 0
+  }
+  // fetch transactions from server endpoint when userId is available
+  useEffect(() => {
+
+    if (!userId) {
+      // if user isn't logged in yet, clear
+      setTransactions(null)
+      setTxLoading(false)
+      setTxError(null)
+      return
+    }
+
+    let mounted = true
+    setTxLoading(true)
+    setTxError(null)
+
+    fetch(`/api/crypto-transactions?userId=${userId}`, {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const txt = await res.text().catch(() => null)
+          throw new Error(txt || `Failed to fetch transactions (${res.status})`)
+        }
+        return res.json()
+      })
+      .then((data) => {
+        // Expecting { transactions: [...] } from the server
+        if (!mounted) return
+        const docs: Tx[] = Array.isArray(data?.transactions) ? data.transactions : data
+        setTransactions(docs)
+        setTxLoading(false)
+      })
+      .catch((err: any) => {
+        if (!mounted) return
+        console.error("Error fetching transactions:", err)
+        setTxError(err?.message || "Failed to load transactions")
+        setTxLoading(false)
+      })
+
+      fetch("/api/fetch-crypto-account", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },  
+      })
+      .then(async (res) => {
+        if (!res.ok) {
+          const txt = await res.text().catch(() => null)
+          throw new Error(txt || `Failed to fetch accounts (${res.status})`)
+        }
+        return res.json()
+      })
+      .then((data) => {
+        console.log("crypto-accounts", data)
+        const pairs = (data.message || []).map((acc: any) => ({
+          id: acc.$id,
+          symbol: acc.symbol,
+          balance: acc.balance,
+          usdValue: acc.usdValue
+        }))
+        setCryptoAccount(pairs)
+      })
+      .catch((err: any) => {
+        console.error("Error fetching accounts:", err)
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [userId])
 
   const copyToClipboard = (address: string) => {
     navigator.clipboard.writeText(address)
@@ -112,7 +187,6 @@ export function CryptoSection() {
   }
 
   const generateQRCode = (address: string) => {
-    // Using a simple QR code service - in production, would use a proper QR library
     return `/placeholder.png?height=200&width=200&query=QR code for crypto address ${address.slice(0, 8)}`
   }
 
@@ -121,9 +195,40 @@ export function CryptoSection() {
     setShowSendModal(cryptoSymbol)
   }
 
-  const handleSendSubmit = () => {
+  const handleSendSubmit = async (cryptoSymbol: string) => {
     if (!sendFormData.recipientAddress || !sendFormData.amount) return
-
+    if (cryptoSymbol === "BTC") {
+      const valid = isValidBTC(sendFormData.recipientAddress)
+      if (!valid) {
+        alert("Invalid BTC address")
+        return
+      }
+    }
+    if (cryptoSymbol === "ETH" || cryptoSymbol === "USDC") {
+      const valid = isValidETH(sendFormData.recipientAddress)
+      if (!valid) {
+        alert(`Invalid ${cryptoSymbol} address`)
+        return
+      }
+    }
+    const response = await fetch("/api/verify-crypto-transaction", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        amount: sendFormData.amount,
+        symbol: cryptoSymbol,
+        userId: userId,
+      }),
+      credentials: "include",
+    })
+    if (!response.ok) {
+      console.log(await response.json())
+      alert("Insufficient funds")
+      return
+    }
+    setIdStore(getUserIdFromSymbol(cryptoSymbol))
     setShowSendModal(null)
     setShowSecurityModal(true)
   }
@@ -132,12 +237,9 @@ export function CryptoSection() {
     setShowSecurityModal(false)
     setSendFormData({ recipientAddress: "", amount: "", memo: "" })
     setSendCrypto("")
-    // In real app, would process the crypto transaction
+    // Optionally: re-fetch transactions after a successful send.
+    // (You can call the same fetch logic, or trigger a refetch using a state "refetchCounter")
   }
-
-  const totalCryptoValue = mockCryptoBalances.reduce((sum, crypto) => sum + crypto.usdValue, 0)
-
-  const displayedTransactions = showAllTransactions ? mockCryptoTransactions : mockCryptoTransactions.slice(0, 3)
 
   return (
     <div className="space-y-6">
@@ -177,8 +279,8 @@ export function CryptoSection() {
               </div>
 
               <div className="mb-4">
-                <p className="text-xl font-bold">{crypto.balance.toLocaleString()}</p>
-                <p className="text-sm text-muted-foreground">{formatCurrency(crypto.usdValue)}</p>
+                {cryptoAccount &&<p className="text-xl font-bold">{getBalanceBySymbol(crypto.symbol)}</p>}
+                {cryptoAccount &&<p className="text-sm text-muted-foreground">{formatCurrency(getUSDValueBySymbol(crypto.symbol))}</p>}
               </div>
 
               <div className="space-y-3">
@@ -237,53 +339,86 @@ export function CryptoSection() {
             {showAllTransactions ? "Show Less" : "View All"}
           </Button>
         </div>
-        <div className="space-y-4">
-          {displayedTransactions.map((transaction) => (
-            <div
-              key={transaction.id}
-              className="flex items-center justify-between p-4 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
-            >
-              <div className="flex items-center space-x-4">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    transaction.type === "receive" ? "bg-emerald-500/20" : "bg-red-500/20"
-                  }`}
-                >
-                  {transaction.type === "receive" ? (
-                    <ArrowDownLeft className="w-5 h-5 text-emerald-400" />
-                  ) : (
-                    <ArrowUpRight className="w-5 h-5 text-red-400" />
-                  )}
+
+        {/* Loading skeleton */}
+        {txLoading && (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center justify-between p-4 rounded-lg bg-transparent">
+                <div className="flex items-center space-x-4">
+                  <div className="w-10 h-10 rounded-full animate-pulse bg-white/5" />
+                  <div className="space-y-2">
+                    <div className="w-40 h-4 animate-pulse bg-white/5 rounded" />
+                    <div className="w-56 h-3 animate-pulse bg-white/5 rounded" />
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium">
-                    {transaction.type === "receive" ? "Received" : "Sent"} {transaction.symbol}
+                <div className="text-right space-y-2">
+                  <div className="w-24 h-4 animate-pulse bg-white/5 rounded mx-auto" />
+                  <div className="w-20 h-3 animate-pulse bg-white/5 rounded mx-auto" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Error */}
+        {txError && !txLoading && (
+          <div className="text-sm text-red-400 p-4">{`Could not load transactions: ${txError}`}</div>
+        )}
+
+        {/* Empty state */}
+        {!txLoading && !txError && (!transactions || transactions.length === 0) && (
+          <div className="text-sm text-muted-foreground p-4">No transactions yet.</div>
+        )}
+
+        {/* Real transactions */}
+        {!txLoading && !txError && transactions && transactions.length > 0 && (
+          <div className="space-y-4">
+            {displayedTransactions.map((transaction) => (
+              <div
+                key={transaction.id}
+                className="flex items-center justify-between p-4 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center space-x-4">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      transaction.type === "receive" ? "bg-emerald-500/20" : "bg-red-500/20"
+                    }`}
+                  >
+                    {transaction.type === "receive" ? (
+                      <ArrowDownLeft className="w-5 h-5 text-emerald-400" />
+                    ) : (
+                      <ArrowUpRight className="w-5 h-5 text-red-400" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium">
+                      {transaction.type === "receive" ? "Received" : "Sent"} {transaction.symbol}
+                    </p>
+                    <p className="text-sm text-muted-foreground font-mono">{transaction.hash?.slice(0,10) || "—"}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p
+                    className={`font-semibold ${transaction.type === "receive" ? "text-emerald-400" : "text-foreground"}`}
+                  >
+                    {transaction.amount > 0 ? "+" : ""}
+                    {transaction.amount.toLocaleString()} {transaction.symbol}
                   </p>
-                  <p className="text-sm text-muted-foreground font-mono">{transaction.hash}</p>
+                  <p className="text-sm text-muted-foreground">{formatCurrency(transaction.usdValue)}</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p
-                  className={`font-semibold ${transaction.type === "receive" ? "text-emerald-400" : "text-foreground"}`}
-                >
-                  {transaction.amount > 0 ? "+" : ""}
-                  {transaction.amount.toLocaleString()} {transaction.symbol}
-                </p>
-                <p className="text-sm text-muted-foreground">{formatCurrency(transaction.usdValue)}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </Card>
 
-      {/* QR Code Modal */}
+      {/* The rest of your modals (unchanged) */}
       {showQRModal && (
         <Dialog open={!!showQRModal} onOpenChange={() => setShowQRModal(null)}>
           <DialogContent className="glass max-w-sm border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
             <DialogHeader>
-              <DialogTitle className="font-serif text-xl text-center text-emerald-400">
-                Receive {showQRModal}
-              </DialogTitle>
+              <DialogTitle className="font-serif text-xl text-center text-emerald-400">Receive {showQRModal}</DialogTitle>
             </DialogHeader>
 
             <div className="space-y-4 text-center">
@@ -316,9 +451,7 @@ export function CryptoSection() {
                           <Copy className="w-4 h-4" />
                         </Button>
                       </div>
-                      {copiedAddress === crypto.address && (
-                        <p className="text-xs text-emerald-400 mt-1">Address copied!</p>
-                      )}
+                      {copiedAddress === crypto.address && <p className="text-xs text-emerald-400 mt-1">Address copied!</p>}
                     </div>
 
                     <div className="flex space-x-2">
@@ -333,7 +466,6 @@ export function CryptoSection() {
                         variant="outline"
                         className="flex-1 glass-dark bg-transparent border-emerald-500/30 hover:border-emerald-500/50 hover:bg-emerald-500/10"
                         onClick={() => {
-                          // In real app, would save QR code image
                           const link = document.createElement("a")
                           link.download = `${crypto.symbol}-address-qr.png`
                           link.href = generateQRCode(crypto.address)
@@ -352,7 +484,6 @@ export function CryptoSection() {
         </Dialog>
       )}
 
-      {/* Send Crypto Modal */}
       {showSendModal && (
         <Dialog open={!!showSendModal} onOpenChange={() => setShowSendModal(null)}>
           <DialogContent className="glass max-w-md border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
@@ -422,7 +553,7 @@ export function CryptoSection() {
                         Cancel
                       </Button>
                       <Button
-                        onClick={handleSendSubmit}
+                        onClick={() => handleSendSubmit(crypto.symbol)}
                         className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
                         disabled={!sendFormData.recipientAddress || !sendFormData.amount}
                       >
@@ -438,14 +569,13 @@ export function CryptoSection() {
         </Dialog>
       )}
 
-      {/* Transaction Security Modal */}
       <TransactionSecurityModal
         isOpen={showSecurityModal}
         onClose={() => setShowSecurityModal(false)}
         onSuccess={handleSecuritySuccess}
         transactionType="Crypto Transfer"
         transactionDetails={{
-          cryptoType: sendCrypto,
+          cryptoType: "crypto",
           amount: sendFormData.amount,
           address: sendFormData.recipientAddress,
         }}
