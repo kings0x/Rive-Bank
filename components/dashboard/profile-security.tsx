@@ -48,6 +48,8 @@ export function ProfileSecurity({ activeTab, onTabChange }: ProfileSecurityProps
     confirmPin: "",
   })
   const accountDetails = useAccountStore((s) => s.accountDetails)
+  const [setPassword, setSetPassword] = useState(false)
+  const [setPin, setSetPin] = useState(false)
 
   const updateProfileData = (field: string, value: string) => {
     setProfileData((prev) => ({ ...prev, [field]: value }))
@@ -68,7 +70,7 @@ export function ProfileSecurity({ activeTab, onTabChange }: ProfileSecurityProps
   }
 
   const handlePinVerification = async() => {
-    
+    setSetPin(true)
 
     if (transactionPin.length === 4) {
       if (currentAction === "save-profile") {
@@ -204,6 +206,7 @@ export function ProfileSecurity({ activeTab, onTabChange }: ProfileSecurityProps
   }
 
   const handleUpdatePassword = async() => {
+    setSetPassword(true)
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       alert("New passwords do not match!")
       return
@@ -237,9 +240,11 @@ export function ProfileSecurity({ activeTab, onTabChange }: ProfileSecurityProps
 
     setCurrentAction("update-password")
     setShowPinDialog(true)
+    setSetPassword(false)
   }
 
   const handleUpdatePin = async() => {
+    setSetPin(true)
     if (pinData.newPin !== pinData.confirmPin) {
       alert("New PINs do not match!")
       return
@@ -274,6 +279,7 @@ export function ProfileSecurity({ activeTab, onTabChange }: ProfileSecurityProps
 
     setCurrentAction("update-pin")
     setShowPinDialog(true)
+    setSetPin(false)
   }
 
   return (
@@ -525,6 +531,7 @@ export function ProfileSecurity({ activeTab, onTabChange }: ProfileSecurityProps
 
             <div className="mt-4">
               <Button
+                disabled={setPassword === true}
                 variant="outline"
                 className="glass-dark bg-transparent border-emerald-500/30 hover:border-emerald-500/50 hover:bg-emerald-500/10"
                 onClick={handleUpdatePassword}
@@ -585,6 +592,7 @@ export function ProfileSecurity({ activeTab, onTabChange }: ProfileSecurityProps
 
             <div className="mt-4">
               <Button
+              disabled={setPin === true}
                 variant="outline"
                 className="glass-dark bg-transparent border-emerald-500/30 hover:border-emerald-500/50 hover:bg-emerald-500/10"
                 onClick={handleUpdatePin}

@@ -72,7 +72,8 @@ export function AccountsOverview({ onSectionChange, onAccountSelect }: AccountsO
 
       async function getAllTransactions() {
         try {
-          const tx = await fetchTransactions(userId)
+          const fetchedTx = await fetchTransactions(userId)
+          const tx = fetchedTx.reverse();
           if (!mounted) return
           setDbTransactions(Array.isArray(tx) ? tx : [])
         } catch (err) {

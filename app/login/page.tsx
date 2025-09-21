@@ -64,7 +64,7 @@ export default function LoginPage() {
 
       if (!response.ok) {
         setErrors({ email: "Invalid email or password" })
-        if (isMountedRef.current) setIsLoading(false);
+        setIsLoading(false);
         return
       }
 

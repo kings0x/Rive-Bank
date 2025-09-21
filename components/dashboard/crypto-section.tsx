@@ -72,6 +72,7 @@ export function CryptoSection() {
   const [transactions, setTransactions] = useState<Tx[] | null>(null)
   const [txLoading, setTxLoading] = useState<boolean>(false)
   const [txError, setTxError] = useState<string | null>(null)
+  const [sendClicked, setSendClicked] = useState<boolean>(false)
 
   const totalCryptoValue = cryptoAccount?.reduce((sum: any, crypto: any) => sum + crypto.usdValue, 0)
 
@@ -196,6 +197,7 @@ export function CryptoSection() {
   }
 
   const handleSendSubmit = async (cryptoSymbol: string) => {
+    setSendClicked(true);
     if (!sendFormData.recipientAddress || !sendFormData.amount) return
     if (cryptoSymbol === "BTC") {
       const valid = isValidBTC(sendFormData.recipientAddress)
@@ -231,6 +233,7 @@ export function CryptoSection() {
     setIdStore(getUserIdFromSymbol(cryptoSymbol))
     setShowSendModal(null)
     setShowSecurityModal(true)
+    setSendClicked(false);
   }
 
   const handleSecuritySuccess = () => {
@@ -483,7 +486,7 @@ export function CryptoSection() {
           </DialogContent>
         </Dialog>
       )}
-
+    {/* /** need to look at this modal */ }
       {showSendModal && (
         <Dialog open={!!showSendModal} onOpenChange={() => setShowSendModal(null)}>
           <DialogContent className="glass max-w-md border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
@@ -504,7 +507,7 @@ export function CryptoSection() {
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Available Balance:</span>
                         <span className="font-semibold">
-                          {crypto.balance.toLocaleString()} {crypto.symbol}
+                          {getBalanceBySymbol(crypto.symbol).toLocaleString()} {crypto.symbol}
                         </span>
                       </div>
                     </div>
@@ -553,9 +556,10 @@ export function CryptoSection() {
                         Cancel
                       </Button>
                       <Button
+                        
                         onClick={() => handleSendSubmit(crypto.symbol)}
                         className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
-                        disabled={!sendFormData.recipientAddress || !sendFormData.amount}
+                        disabled={!sendFormData.recipientAddress || !sendFormData.amount || sendClicked === true}
                       >
                         <Send className="w-4 h-4 mr-2" />
                         Send {crypto.symbol}
