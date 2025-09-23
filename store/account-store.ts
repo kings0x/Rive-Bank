@@ -97,4 +97,28 @@ export const useUserIdStore = create<UserIdState>()(
   })
 )
 
+type UserNameState = {
+  userName: string,
+  setUserName: (userName: string) => void
+}
+
+export const userUserNameStore = create<UserNameState>()(
+  (set)=>({
+    userName: "",
+    setUserName: (userName: string) => set({userName: userName})
+  })
+)
+
+type UserEmailState = {
+  userEmail: string,
+  setUserEmail: (userName: string) => void
+}
+
+export const userUserEmailStore = create<UserEmailState>()(
+  (set)=>({
+    userEmail: "",
+    setUserEmail: (email: string) => set({userEmail: email})
+  })
+)
+
 

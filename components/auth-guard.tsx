@@ -4,7 +4,8 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAccountStore, useUserIdStore} from "@/store/account-store"
+import { useAccountStore, useUserIdStore, userUserNameStore, userUserEmailStore} from "@/store/account-store"
+
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -17,6 +18,9 @@ export function AuthGuard({ children, redirectTo = "/login" }: AuthGuardProps) {
   const router = useRouter()
   const fetchAccountDetails = useAccountStore(s => s.fetchAccountDetails);
   const setUserId = useUserIdStore(s => s.setUserId);
+  const setUserName = userUserNameStore(s => s.setUserName);
+  const setUserEmail = userUserEmailStore(s => s.setUserEmail);
+
   useEffect(() => {
     const checkAuth = async() => {
       const response = await fetch("/api/login", { credentials: "include" });
@@ -28,6 +32,8 @@ export function AuthGuard({ children, redirectTo = "/login" }: AuthGuardProps) {
       const user = data.data
       console.log("user", user.$id)
       setUserId(user.$id)
+      setUserName(user.name)
+      setUserEmail(user.email)
       const userAccount = await fetchAccountDetails(user.$id)
       if (!userAccount) {
         router.push(redirectTo)

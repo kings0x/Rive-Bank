@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { getCurrentUser } from "@/lib/auth"
 import { SecurityAudit } from "./security-audit"
 import { User, Shield, Key, Smartphone, Mail, Check } from "lucide-react"
-import { useAccountStore } from "@/store/account-store"
+import { useAccountStore, userUserNameStore, userUserEmailStore } from "@/store/account-store"
+
 
 interface ProfileSecurityProps {
   activeTab: "profile" | "security"
@@ -50,6 +51,8 @@ export function ProfileSecurity({ activeTab, onTabChange }: ProfileSecurityProps
   const accountDetails = useAccountStore((s) => s.accountDetails)
   const [setPassword, setSetPassword] = useState(false)
   const [setPin, setSetPin] = useState(false)
+  const userName = userUserNameStore(s => s.userName);
+  const userEmail = userUserEmailStore(s => s.userEmail);
 
   const updateProfileData = (field: string, value: string) => {
     setProfileData((prev) => ({ ...prev, [field]: value }))
@@ -331,7 +334,7 @@ export function ProfileSecurity({ activeTab, onTabChange }: ProfileSecurityProps
                 <Label htmlFor="name">Full Name</Label>
                 <Input
                   id="name"
-                  value={profileData.name}
+                  value={userName}
                   onChange={(e) => updateProfileData("name", e.target.value)}
                   className="glass-input border-emerald-500/20 focus:border-emerald-500/50"
                   disabled={!isEditing}
@@ -342,7 +345,7 @@ export function ProfileSecurity({ activeTab, onTabChange }: ProfileSecurityProps
                 <Input
                   id="email"
                   type="email"
-                  value={profileData.email}
+                  value={userEmail}
                   onChange={(e) => updateProfileData("email", e.target.value)}
                   className="glass-input border-emerald-500/20 focus:border-emerald-500/50"
                   disabled={!isEditing}

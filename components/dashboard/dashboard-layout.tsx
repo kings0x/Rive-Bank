@@ -8,6 +8,7 @@ import { Home, ArrowUpDown, Bitcoin, CreditCard, User, Shield, LogOut, Menu, X, 
 import { useState } from "react"
 import { log } from "console"
 import { toast } from "sonner"
+import { userUserNameStore } from "@/store/account-store"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -28,6 +29,8 @@ export function DashboardLayout({ children, activeSection, onSectionChange }: Da
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [logoutClicked, setLogoutClicked] = useState(false)
   const user = getCurrentUser()
+  const usersName = userUserNameStore(s => s.userName);
+  
 
   const handleLogout = async() => {
     setLogoutClicked(true)
@@ -195,8 +198,8 @@ export function DashboardLayout({ children, activeSection, onSectionChange }: Da
                 <h2 className="font-serif text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold truncate">
                   {navigationItems.find((item) => item.key === activeSection)?.label}
                 </h2>
-                <p className="text-xs sm:text-sm md:text-base text-muted-foreground truncate mt-0.5">
-                  Welcome back, {user?.name || "Elite Member"}
+                <p className="text-xs sm:text-sm md:text-base text-muted-foreground truncate mt-0.5 ">
+                  Welcome back, <span className="text-white font-medium">{usersName}</span>
                 </p>
               </div>
             </div>
