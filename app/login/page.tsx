@@ -154,10 +154,10 @@ export default function LoginPage() {
                 <div className="relative mt-1 sm:mt-2">
                   <Input
                     id="password"
-                    type={showPassword ? "text" : "password"}
+                    type="text"                     // NEVER "password"
                     value={formData.password}
                     onChange={(e) => updateFormData("password", e.target.value)}
-                    className="glass-input pr-12 sm:pr-14 min-h-[44px] sm:min-h-[48px] md:min-h-[52px] text-sm sm:text-base"
+                    className={`glass-input pr-12 sm:pr-14 min-h-[44px] sm:min-h-[48px] md:min-h-[52px] text-sm sm:text-base ${!showPassword ? 'masked-input' : ''}`}
                     placeholder="Enter your password"
                     disabled={isLoading}
                   />

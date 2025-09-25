@@ -123,6 +123,10 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* global.css */
+  .masked-input {
+    -webkit-text-security: disc;
+  }
 }
 
 @layer components {
