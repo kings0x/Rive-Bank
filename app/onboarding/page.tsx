@@ -396,7 +396,7 @@ export default function OnboardingPage() {
 
               <div>
                 <h2 className="font-serif text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold mb-2 sm:mb-3">
-                  Welcome to Rive
+                  Welcome to RiveTrust
                 </h2>
                 <p className="text-muted-foreground mb-4 sm:mb-6 lg:mb-8 text-xs sm:text-sm md:text-base leading-relaxed">
                   You now have access to elite banking. Your account has been created successfully.

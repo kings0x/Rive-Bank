@@ -1,4 +1,4 @@
-// Authentication utilities for Rive Banking
+// Authentication utilities for RiveTrust
 
 export interface User {
   email: string

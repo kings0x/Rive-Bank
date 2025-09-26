@@ -34,7 +34,7 @@ export default function LandingPage() {
                 size="lg"
                 className="glass neon-glow transition-all duration-300 px-4 sm:px-6 md:px-8 py-3 sm:py-4 text-sm sm:text-base md:text-lg font-medium hover:shadow-[0_0_30px_rgba(213,0,109,0.5)] w-full md:w-auto min-h-[48px] sm:min-h-[52px]"
               >
-                <span className="truncate">Login to Rive Online Banking</span>
+                <span className="truncate">Login to RiveTrust </span>
               </Button>
             </Link>
             <Link href="/onboarding" className="w-full md:w-auto">
@@ -82,7 +82,7 @@ export default function LandingPage() {
               Invitation-Only Excellence
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-xs sm:max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto leading-relaxed">
-              Rive Banking operates on an exclusive invitation-only basis, serving only the most distinguished clients
+              RiveTrust operates on an exclusive invitation-only basis, serving only the most distinguished clients
               with unparalleled financial services and cutting-edge technology.
             </p>
           </div>
@@ -403,10 +403,10 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-4 sm:mb-6 md:mb-8">
             <div>
-              <h3 className="font-serif text-lg sm:text-xl md:text-2xl font-bold text-primary mb-2">RIVE</h3>
+              <h3 className="font-serif text-lg sm:text-xl md:text-2xl font-bold text-primary mb-2">RIVETRUST</h3>
               <p className="text-sm text-muted-foreground mb-3 sm:mb-4">Banking for the Elite</p>
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                Rive Banking is a member of FDIC and provides banking services exclusively to qualified high-net-worth
+                RiveTrust is a member of FDIC and provides banking services exclusively to qualified high-net-worth
                 individuals and institutions.
               </p>
             </div>
@@ -504,7 +504,7 @@ export default function LandingPage() {
 
           <div className="pt-4 sm:pt-6 md:pt-8 border-t border-border/30 text-center">
             <p className="text-xs sm:text-sm text-muted-foreground">
-              © 2025 Rive Banking. All rights reserved. Member FDIC. Equal Housing Lender.
+              © 2025 RiveTrust. All rights reserved. Member FDIC. Equal Housing Lender.
             </p>
           </div>
         </div>

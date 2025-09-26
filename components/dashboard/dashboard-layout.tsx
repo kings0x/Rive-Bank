@@ -80,7 +80,7 @@ export function DashboardLayout({ children, activeSection, onSectionChange }: Da
             <div className="flex items-center justify-between">
               <div className="min-w-0 flex-1">
                 <h1 className="font-serif text-xl sm:text-2xl md:text-2xl lg:text-3xl font-bold text-primary truncate">
-                  RIVE
+                  RIVETRUST
                 </h1>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">Elite Banking Portal</p>
               </div>

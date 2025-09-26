@@ -13,7 +13,7 @@ import { CreditCard, Lock, Settings, Eye, EyeOff, Download, Plus, TrendingUp } f
 const mockCards = [
   {
     id: "1",
-    name: "Rive Elite Debit",
+    name: "RiveTrust Elite Debit",
     type: "Debit",
     last4: "8392",
     status: "active",
@@ -24,7 +24,7 @@ const mockCards = [
   },
   {
     id: "2",
-    name: "Rive Platinum Credit",
+    name: "RiveTrust Platinum Credit",
     type: "Credit",
     last4: "2847",
     status: "active",
@@ -35,7 +35,7 @@ const mockCards = [
   },
   {
     id: "3",
-    name: "Rive Business Elite",
+    name: "RiveTrust Business Elite",
     type: "Business Credit",
     last4: "9384",
     status: "active",
@@ -195,7 +195,7 @@ export function CardsSection() {
                     <CreditCard className="w-5 h-5 text-white" />
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-white/90 font-semibold tracking-wider">RIVE</p>
+                    <p className="text-xs text-white/90 font-semibold tracking-wider">RIVETRUST</p>
                     <p className="text-xs text-white/70 font-medium">{card.type.toUpperCase()}</p>
                   </div>
                 </div>
@@ -313,9 +313,9 @@ export function CardsSection() {
                       <SelectValue placeholder="Select card type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="debit">Rive Elite Debit</SelectItem>
-                      <SelectItem value="credit">Rive Platinum Credit</SelectItem>
-                      <SelectItem value="business">Rive Business Elite</SelectItem>
+                      <SelectItem value="debit">RiveTrust Elite Debit</SelectItem>
+                      <SelectItem value="credit">RiveTrust Platinum Credit</SelectItem>
+                      <SelectItem value="business">RiveTrust Business Elite</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

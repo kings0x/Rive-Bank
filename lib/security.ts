@@ -1,4 +1,4 @@
-// Enhanced security utilities for Rive Banking
+// Enhanced security utilities for RiveTrust
 import crypto from 'crypto'
 export interface SecurityEvent {
   id: string

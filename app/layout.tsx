@@ -18,9 +18,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Rive Banking - Exclusive Banking for the Elite",
+  title: "RiveTrust - Exclusive Finance for the Elite",
   description:
-    "Ultra-luxury digital banking for high-net-worth individuals. Banking for the 1% of the 1%.",
+    "Ultra-luxury digital finance for high-net-worth individuals. Banking for the 1% of the 1%.",
   verification: {
     google: '4MGxH68iBfFg_ImUHDh9D1mDdUjHQ2-3SnRezge5_IE',
   },

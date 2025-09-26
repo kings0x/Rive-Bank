@@ -105,9 +105,9 @@ export default function LoginPage() {
             Back to Home
           </Link>
           <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3 text-primary">
-            RIVE
+            RIVETRUST
           </h1>
-          <p className="text-muted-foreground text-xs sm:text-sm md:text-base">Secure Online Banking</p>
+          <p className="text-muted-foreground text-xs sm:text-sm md:text-base">Secure Online Finance</p>
         </div>
 
         {/* Login Form */}
@@ -198,7 +198,7 @@ export default function LoginPage() {
                 ) : (
                   <>
                     <LogIn className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" />
-                    <span className="text-sm sm:text-base md:text-lg">Login to Rive</span>
+                    <span className="text-sm sm:text-base md:text-lg">Login to RiveTrust</span>
                   </>
                 )}
               </Button>
