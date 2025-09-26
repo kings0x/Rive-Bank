@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation"
 import { useRef, useEffect } from "react";
 import { useUserIdStore } from "@/store/account-store";
 import { Toaster, toast } from "sonner"
+import {performLogin} from "../../lib/actions/user.actions";
 
 //on reload, checks wether the user is connected if not redirects to login
 //make it get balances from the backend
@@ -53,23 +54,14 @@ export default function LoginPage() {
     setIsLoading(true)
     
     try{
-        const response =await fetch("/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-        credentials: "include"
-      })
+        const response = await performLogin(formData);
 
-      if (!response.ok) {
+      if (!response) {
         setErrors({ email: "Invalid email or password" })
         setIsLoading(false);
         return
       }
-
-      const data = await response.json()
-      console.log(data)
+      console.log(response);
       router.push("/dashboard");
       toast.success("successful");
       
