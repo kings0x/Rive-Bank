@@ -26,21 +26,6 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: "Insufficient balance" }, { status: 400 });
         }
 
-        const recipient_details = await database.listDocuments(
-            process.env.DATABASE_ID!,
-            process.env.USER_ACCOUNT_COLLECTION_ID!,
-            [
-                Query.equal("account_number", recipient_account_number),
-                Query.equal("full_user_name", recipient_name),
-                Query.equal("routing_number", Number(routing_number)),
-                
-                
-            ]
-        );
-
-        if(recipient_details.documents.length === 0) {
-            return NextResponse.json({ message: "Recipient details not found" }, { status: 400 });
-        }
 
 
         return NextResponse.json({ message: "Transactions validated successfully" }, { status: 200 });

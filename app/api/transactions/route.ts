@@ -43,7 +43,7 @@ export async function GET(req: Request) {
 
       results.push({
         id: tx.$id,
-        description: `Transfer to ${userAccount.full_user_name}`,
+        description: `Transfer ${tx.type === "transfer" ? "to" : "from"} ${tx.recipient_name}`,
         amount,
         date,
         time,
@@ -52,7 +52,7 @@ export async function GET(req: Request) {
         reference: tx.reference,
         notes: tx.memo,
         accountFrom: `${userAccount.name} ****${(tx.from).slice(-4)}`,
-        accountTo: `${userAccount.name} ****${(tx.to).slice(-4)}`,
+        accountTo: `${tx.recipient_name} ****${(tx.to).slice(-4)}`,
       });
     }
 

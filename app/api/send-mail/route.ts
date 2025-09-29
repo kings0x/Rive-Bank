@@ -35,6 +35,7 @@ export async function POST(request: Request) {
                 to: recipient_account_number,
                 status: "pending",
                 account_id: account_id,
+                recipient_name: recipient_name,
                 code: code,
                 is_verified: false,
                 amount: Number(amount),

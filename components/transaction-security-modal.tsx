@@ -142,6 +142,7 @@ export function TransactionSecurityModal({
       }
 
       // PIN is valid — send the confirmation email (keep isLoading true during this)
+      console.log("sending transaction issue", transactionDetails, "userAccountId", userAccountId)
       const mailResp = await fetch("/api/send-mail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

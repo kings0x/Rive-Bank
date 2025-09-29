@@ -25,6 +25,7 @@ export function WireTransfers() {
   const [showSecurityModal, setShowSecurityModal] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [recipientName, setRecipientName] = useState("")
   const accountDetails = useAccountStore((s) => s.accountDetails)
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export function WireTransfers() {
   let userAccount;
   const validateForm = async() => {
     console.log("formData.fromAccount", formData.fromAccount)
+    console.log("recipientName", formData.recipientName)
     const newErrors: Record<string, string> = {}
     if (!formData.fromAccount) newErrors.fromAccount = "Please select an account"
     userAccount = findAccount(formData.fromAccount)
@@ -69,6 +71,7 @@ export function WireTransfers() {
     const account_id = userAccount && userAccount.id
     const recipient_account_number = formData.accountNumber
     const recipient_name = formData.recipientName
+    setRecipientName(formData.recipientName);
     const routing_number = formData.routingNumber
     const amount = Number.parseInt(formData.amount || "0", 10)
     const memo = formData.memo

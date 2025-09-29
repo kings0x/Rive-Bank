@@ -93,44 +93,44 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Transaction did not go through (sender update failed)" }, { status: 400 });
     }
 
-    // find recipient account by account_number field
-    const recipientQuery = await database.listDocuments(
-      process.env.DATABASE_ID!,
-      process.env.USER_ACCOUNT_COLLECTION_ID!,
-      [Query.equal("account_number", recipient_account_number)]
-    );
+    // // find recipient account by account_number field
+    // const recipientQuery = await database.listDocuments(
+    //   process.env.DATABASE_ID!,
+    //   process.env.USER_ACCOUNT_COLLECTION_ID!,
+    //   [Query.equal("account_number", recipient_account_number)]
+    // );
 
-    if (!recipientQuery?.documents || recipientQuery.documents.length === 0) {
-    //   console.warn("Recipient account not found", recipient_account_number);
-      await database.updateDocument(
-        process.env.DATABASE_ID!,
-        process.env.TRANSACTION_COLLECTION_ID!,
-        transaction_id,
-        { is_verified: true, status: "failed" }
-      );
-      return NextResponse.json({ error: "Recipient account not found" }, { status: 400 });
-    }
+    // if (!recipientQuery?.documents || recipientQuery.documents.length === 0) {
+    // //   console.warn("Recipient account not found", recipient_account_number);
+    //   await database.updateDocument(
+    //     process.env.DATABASE_ID!,
+    //     process.env.TRANSACTION_COLLECTION_ID!,
+    //     transaction_id,
+    //     { is_verified: true, status: "failed" }
+    //   );
+    //   return NextResponse.json({ error: "Recipient account not found" }, { status: 400 });
+    // }
 
-    const recipientDoc = recipientQuery.documents[0];
-    const recipientId = recipientDoc.$id;
-    const recipientBalance = Number(recipientDoc.balance) || 0;
+    // const recipientDoc = recipientQuery.documents[0];
+    // const recipientId = recipientDoc.$id;
+    // const recipientBalance = Number(recipientDoc.balance) || 0;
 
-    const updatedRecipient = await database.updateDocument(
-      process.env.DATABASE_ID!,
-      process.env.USER_ACCOUNT_COLLECTION_ID!,
-      recipientId,
-      { balance: recipientBalance + amount }
-    );
+    // const updatedRecipient = await database.updateDocument(
+    //   process.env.DATABASE_ID!,
+    //   process.env.USER_ACCOUNT_COLLECTION_ID!,
+    //   recipientId,
+    //   { balance: recipientBalance + amount }
+    // );
 
-    if (!updatedRecipient) {
-      await database.updateDocument(
-        process.env.DATABASE_ID!,
-        process.env.TRANSACTION_COLLECTION_ID!,
-        transaction_id,
-        { is_verified: true, status: "failed" }
-      );
-      return NextResponse.json({ error: "Transaction did not go through (recipient update failed)" }, { status: 400 });
-    }
+    // if (!updatedRecipient) {
+    //   await database.updateDocument(
+    //     process.env.DATABASE_ID!,
+    //     process.env.TRANSACTION_COLLECTION_ID!,
+    //     transaction_id,
+    //     { is_verified: true, status: "failed" }
+    //   );
+    //   return NextResponse.json({ error: "Transaction did not go through (recipient update failed)" }, { status: 400 });
+    // }
     const reference_number = generateReference();
     //update the transaction
     await database.updateDocument(
