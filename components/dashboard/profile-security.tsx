@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { getCurrentUser } from "@/lib/auth"
 import { SecurityAudit } from "./security-audit"
 import { User, Shield, Key, Smartphone, Mail, Check } from "lucide-react"
-import { useAccountStore, userUserNameStore, userUserEmailStore } from "@/store/account-store"
+import { useAccountStore, userUserNameStore, userUserEmailStore, userUserPhoneStore } from "@/store/account-store"
+import {formatPhoneNumber} from "@/lib/utils"
 
 
 interface ProfileSecurityProps {
@@ -53,6 +54,7 @@ export function ProfileSecurity({ activeTab, onTabChange }: ProfileSecurityProps
   const [setPin, setSetPin] = useState(false)
   const userName = userUserNameStore(s => s.userName);
   const userEmail = userUserEmailStore(s => s.userEmail);
+  const userPhone = userUserPhoneStore(s => s.userPhone);
 
   const updateProfileData = (field: string, value: string) => {
     setProfileData((prev) => ({ ...prev, [field]: value }))
@@ -355,7 +357,7 @@ export function ProfileSecurity({ activeTab, onTabChange }: ProfileSecurityProps
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
                   id="phone"
-                  value={profileData.phone}
+                  value={formatPhoneNumber(userPhone)}
                   onChange={(e) => updateProfileData("phone", e.target.value)}
                   className="glass-input border-emerald-500/20 focus:border-emerald-500/50"
                   placeholder="+1 (555) 123-4567"

@@ -49,3 +49,18 @@ export function isValidETH(address: string ) {
 console.log(isValidETH('0x52908400098527886E0F7030069857D2E4169EE7')); // true
 console.log(isValidETH('0x8617E340B3D01FA5F11F306F4090FD50E238070D')); // true
 console.log(isValidETH('0xde709f2102306220921060314715629080e2fb77')); // true
+
+
+export function formatPhoneNumber(phone:string) {
+    // Remove all non-digit characters except leading +
+    const digits = phone.replace(/[^\d+]/g, '');
+
+    // Match groups: country code, area code (3 digits), first 3 digits, last 4 digits
+    const match = digits.match(/^\+(\d{1})(\d{3})(\d{3})(\d{4})$/);
+
+    if (!match) return phone; // fallback if it doesn't match expected pattern
+
+    const [, country, area, first3, last4] = match;
+
+    return `+${country} (${area}) ${first3}-${last4}`;
+}

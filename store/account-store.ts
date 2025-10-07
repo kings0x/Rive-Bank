@@ -122,3 +122,16 @@ export const userUserEmailStore = create<UserEmailState>()(
 )
 
 
+type UserPhoneState = {
+  userPhone: string,
+  setUserPhone: (userPhone: string) => void
+}
+
+export const userUserPhoneStore = create<UserPhoneState>()(
+  (set)=>({
+    userPhone: "",
+    setUserPhone: (phone: string) => set({userPhone: phone})
+  })
+)
+
+

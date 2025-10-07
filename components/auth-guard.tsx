@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAccountStore, useUserIdStore, userUserNameStore, userUserEmailStore} from "@/store/account-store"
+import { useAccountStore, useUserIdStore, userUserNameStore, userUserEmailStore, userUserPhoneStore} from "@/store/account-store"
 
 
 interface AuthGuardProps {
@@ -20,6 +20,7 @@ export function AuthGuard({ children, redirectTo = "/login" }: AuthGuardProps) {
   const setUserId = useUserIdStore(s => s.setUserId);
   const setUserName = userUserNameStore(s => s.setUserName);
   const setUserEmail = userUserEmailStore(s => s.setUserEmail);
+  const setUserPhone = userUserPhoneStore(s => s.setUserPhone);
 
   useEffect(() => {
     const checkAuth = async() => {
@@ -34,6 +35,7 @@ export function AuthGuard({ children, redirectTo = "/login" }: AuthGuardProps) {
       setUserId(user.$id)
       setUserName(user.name)
       setUserEmail(user.email)
+      setUserPhone(user.phone)
       const userAccount = await fetchAccountDetails(user.$id)
       if (!userAccount) {
         router.push(redirectTo)
