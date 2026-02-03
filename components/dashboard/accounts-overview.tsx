@@ -66,6 +66,7 @@ interface Account {
 export function AccountsOverview({ onSectionChange, onAccountSelect }: AccountsOverviewProps) {
   const userId = useUserIdStore(s => s.userId);
 
+  /*
   useEffect(() => {
     setUserAccounts(userAccountState)
     let mounted = true
@@ -92,10 +93,16 @@ export function AccountsOverview({ onSectionChange, onAccountSelect }: AccountsO
       mounted = false
     }
   }, [userId])
+  */
+
+  // Initialize with empty array and never fetch
+  useEffect(() => {
+    setUserAccounts(userAccountState)
+  }, [userAccountState])
 
 
-  const [dbTransactions, setDbTransactions] = useState<any[] | null>(null)
-  console.log("all transactions", dbTransactions)
+  const [dbTransactions, setDbTransactions] = useState<any[] | null>([]) // Default to empty array
+  // console.log("all transactions", dbTransactions)
 
 
   const [balancesVisible, setBalancesVisible] = useState(true)
