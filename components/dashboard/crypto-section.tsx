@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Copy, QrCode, ArrowUpRight, ArrowDownLeft, Bitcoin, Coins, Send, Download } from "lucide-react"
 import { TransactionSecurityModal } from "@/components/transaction-security-modal"
-import { isValidBTC, isValidETH } from "@/lib/utils"
+import { isValidBTC, isValidETH, isValidSOL } from "@/lib/utils"
 import { useUserIdStore } from "@/store/account-store"
 import { useCurrentAccountIdStore } from "@/store/account-store"
 
@@ -20,7 +20,7 @@ const mockCryptoBalances = [
     name: "Bitcoin",
     balance: 12.847392,
     usdValue: 1284739.2,
-    address: "bc1qleym8xef3n76cmrn25hzdede4fha8df9utyzv8",
+    address: "bc1qqzjx76atrrl5hn5w73r6au2c26tdll5taa58h4",
     icon: Bitcoin,
   },
   {
@@ -28,15 +28,15 @@ const mockCryptoBalances = [
     name: "Ethereum",
     balance: 847.392,
     usdValue: 2847392.1,
-    address: "0x9A250beca3b146C611feF6c5d2ca3Ccf3A39Fe78",
+    address: "0xe83b0ba0447d22277b661ca30dfadf99042b1f61",
     icon: Coins,
   },
   {
-    symbol: "USDC",
-    name: "USD Coin",
-    balance: 5847392.45,
-    usdValue: 5847392.45,
-    address: "0x9A250beca3b146C611feF6c5d2ca3Ccf3A39Fe78",
+    symbol: "SOL",
+    name: "Solana",
+    balance: 5847.392,
+    usdValue: 584739.45,
+    address: "4XrMZ58coBNzCZfmvbUhZPFLUEZtBzmJi2FhaWP9j3Gm",
     icon: Coins,
   },
 ]
@@ -82,7 +82,7 @@ export function CryptoSection() {
       ? transactions
       : transactions.slice(0, 3)
     : []
-  
+
   function getBalanceBySymbol(symbol: string) {
     const acct = cryptoAccount?.find((b: any) => b.symbol === symbol)
     return acct ? acct.balance : 0
@@ -140,13 +140,13 @@ export function CryptoSection() {
         setTxLoading(false)
       })
 
-      fetch("/api/fetch-crypto-account", {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },  
-      })
+    fetch("/api/fetch-crypto-account", {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
       .then(async (res) => {
         if (!res.ok) {
           const txt = await res.text().catch(() => null)
@@ -180,9 +180,9 @@ export function CryptoSection() {
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-GB", {
       style: "currency",
-      currency: "USD",
+      currency: "GBP",
       minimumFractionDigits: 2,
     }).format(amount)
   }
@@ -206,8 +206,15 @@ export function CryptoSection() {
         return
       }
     }
-    if (cryptoSymbol === "ETH" || cryptoSymbol === "USDC") {
+    if (cryptoSymbol === "ETH") {
       const valid = isValidETH(sendFormData.recipientAddress)
+      if (!valid) {
+        alert(`Invalid ${cryptoSymbol} address`)
+        return
+      }
+    }
+    if (cryptoSymbol === "SOL") {
+      const valid = isValidSOL(sendFormData.recipientAddress)
       if (!valid) {
         alert(`Invalid ${cryptoSymbol} address`)
         return
@@ -254,7 +261,7 @@ export function CryptoSection() {
             <p className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-emerald-300 bg-clip-text text-transparent">
               {formatCurrency(totalCryptoValue)}
             </p>
-            <p className="text-sm text-muted-foreground">Total Value</p>
+            <p className="text-sm text-muted-foreground">Portfolio Value (GBP)</p>
           </div>
         </div>
         <p className="text-muted-foreground">Supported on Base Network</p>
@@ -282,8 +289,8 @@ export function CryptoSection() {
               </div>
 
               <div className="mb-4">
-                {cryptoAccount &&<p className="text-xl font-bold">{getBalanceBySymbol(crypto.symbol)}</p>}
-                {cryptoAccount &&<p className="text-sm text-muted-foreground">{formatCurrency(getUSDValueBySymbol(crypto.symbol))}</p>}
+                {cryptoAccount && <p className="text-xl font-bold">{getBalanceBySymbol(crypto.symbol)}</p>}
+                {cryptoAccount && <p className="text-sm text-muted-foreground">{formatCurrency(getUSDValueBySymbol(crypto.symbol))}</p>}
               </div>
 
               <div className="space-y-3">
@@ -384,9 +391,8 @@ export function CryptoSection() {
               >
                 <div className="flex items-center space-x-4">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      transaction.type === "receive" ? "bg-emerald-500/20" : "bg-red-500/20"
-                    }`}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${transaction.type === "receive" ? "bg-emerald-500/20" : "bg-red-500/20"
+                      }`}
                   >
                     {transaction.type === "receive" ? (
                       <ArrowDownLeft className="w-5 h-5 text-emerald-400" />
@@ -398,7 +404,7 @@ export function CryptoSection() {
                     <p className="font-medium">
                       {transaction.type === "receive" ? "Received" : "Sent"} {transaction.symbol}
                     </p>
-                    <p className="text-sm text-muted-foreground font-mono">{transaction.hash?.slice(0,10) || "—"}</p>
+                    <p className="text-sm text-muted-foreground font-mono">{transaction.hash?.slice(0, 10) || "—"}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -486,7 +492,7 @@ export function CryptoSection() {
           </DialogContent>
         </Dialog>
       )}
-    {/* /** need to look at this modal */ }
+      {/* /** need to look at this modal */}
       {showSendModal && (
         <Dialog open={!!showSendModal} onOpenChange={() => setShowSendModal(null)}>
           <DialogContent className="glass max-w-md border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
@@ -556,7 +562,7 @@ export function CryptoSection() {
                         Cancel
                       </Button>
                       <Button
-                        
+
                         onClick={() => handleSendSubmit(crypto.symbol)}
                         className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
                         disabled={!sendFormData.recipientAddress || !sendFormData.amount || sendClicked === true}

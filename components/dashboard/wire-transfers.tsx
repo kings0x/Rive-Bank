@@ -44,16 +44,16 @@ export function WireTransfers() {
     }
   }
 
-  const findAccount = (accountType: string) => {
+  const findAccount = (accountId: string) => {
     for (let i in accountDetails) {
-      if (accountDetails[i].type === accountType) {
+      if (accountDetails[i].id === accountId) {
         console.log("in for loop", accountDetails[i])
         return accountDetails[i]
       }
     }
   }
   let userAccount;
-  const validateForm = async() => {
+  const validateForm = async () => {
     console.log("formData.fromAccount", formData.fromAccount)
     console.log("recipientName", formData.recipientName)
     const newErrors: Record<string, string> = {}
@@ -66,7 +66,7 @@ export function WireTransfers() {
     if (!formData.accountNumber.trim()) newErrors.accountNumber = "Account number is required"
 
     if (!formData.amount || Number.parseInt(formData.amount) <= 0) newErrors.amount = "Please enter a valid amount"
-    if(userAccount && Number.parseInt(formData.amount) > userAccount.balance ) newErrors.amount = "Insufficient Funds"
+    if (userAccount && Number.parseInt(formData.amount) > userAccount.balance) newErrors.amount = "Insufficient Funds"
 
     const account_id = userAccount && userAccount.id
     const recipient_account_number = formData.accountNumber
@@ -76,7 +76,7 @@ export function WireTransfers() {
     const amount = Number.parseInt(formData.amount || "0", 10)
     const memo = formData.memo
 
-    try{
+    try {
 
       const response = await fetch("/api/verify-transaction-details", {
         method: "POST",
@@ -92,13 +92,13 @@ export function WireTransfers() {
           memo
         })
       })
-      if(!response.ok){
+      if (!response.ok) {
         const errorData = await response.json()
-        if(errorData.message === "Insufficient balance"){
+        if (errorData.message === "Insufficient balance") {
           newErrors.amount = errorData.message
         }
 
-        if(errorData.message === "Recipient details not found"){
+        if (errorData.message === "Recipient details not found") {
           newErrors.accountNumber = errorData.message
           newErrors.recipientName = errorData.message
         }
@@ -106,12 +106,12 @@ export function WireTransfers() {
       }
 
     }
-    catch(error: any){
+    catch (error: any) {
       newErrors.fromAccount = "Something went wrong"
       console.log(error.message)
     }
 
-    
+
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -122,6 +122,10 @@ export function WireTransfers() {
     try {
       const ok = await validateForm()
       if (!ok) return
+
+      // Sync the selected account ID to the store for the security modal
+      setIdStore(formData.fromAccount)
+
       // validation passed — open modal
       setShowSecurityModal(true)
     } catch (err) {
@@ -186,9 +190,11 @@ export function WireTransfers() {
                   <SelectValue placeholder="Select account" />
                 </SelectTrigger>
                 <SelectContent className="glass-dark">
-                  <SelectItem value="checking">Elite Checking (****8392)</SelectItem>
-                  <SelectItem value="savings">Wealth Savings (****2847)</SelectItem>
-                  <SelectItem value="business">Business Elite (****9384)</SelectItem>
+                  {accountDetails.map((acc) => (
+                    <SelectItem key={acc.id} value={acc.id}>
+                      {acc.name} (****{acc.accountNumber.slice(-4)})
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               {errors.fromAccount && <p className="text-destructive text-sm mt-1">{errors.fromAccount}</p>}
@@ -235,18 +241,20 @@ export function WireTransfers() {
               {errors.accountNumber && <p className="text-destructive text-sm mt-1">{errors.accountNumber}</p>}
             </div>
 
-            <div>
-              <Label htmlFor="amount">Amount (USD)</Label>
-              <Input
-                id="amount"
-                type="number"
-                step="1"
-                value={formData.amount}
-                onChange={(e) => updateFormData("amount", e.target.value)}
-                className="glass-dark border-emerald-500/30"
-                placeholder="0.00"
-                disabled={isProcessing}
-              />
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount (£)</Label>
+              <div className="relative">
+                <Input
+                  id="amount"
+                  type="number"
+                  placeholder="0.00"
+                  className="glass-dark border-emerald-500/30 pl-8"
+                  value={formData.amount}
+                  onChange={(e) => updateFormData("amount", e.target.value)}
+                  disabled={isProcessing}
+                />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">£</span>
+              </div>
               {errors.amount && <p className="text-destructive text-sm mt-1">{errors.amount}</p>}
             </div>
 
@@ -274,9 +282,9 @@ export function WireTransfers() {
               onClick={handleSubmit}
               className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
               size="lg"
-              disabled={isProcessing||showSecurityModal}
+              disabled={isProcessing || showSecurityModal}
             >
-  
+
               {isProcessing ? (
                 <div className="flex items-center">
                   <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin mr-2"></div>
@@ -292,7 +300,7 @@ export function WireTransfers() {
           </div>
         </div>
       </Card>
-  
+
 
       <TransactionSecurityModal
         isOpen={showSecurityModal}
@@ -306,7 +314,7 @@ export function WireTransfers() {
           account: formData.fromAccount,
         }}
         accountIdd={userAccount}
-        
+
       />
     </div>
   )

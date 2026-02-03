@@ -17,11 +17,11 @@ export async function POST(req: Request) {
     const transaction = await database.listDocuments(
       process.env.DATABASE_ID!,
       process.env.TRANSACTION_COLLECTION_ID!,
-      [ Query.equal("code", emailCode), Query.equal("is_verified", false) ]
+      [Query.equal("code", emailCode), Query.equal("is_verified", false)]
     );
 
     if (!transaction?.documents || transaction.documents.length === 0) {
-    //   console.warn("No matching transaction for code", emailCode);
+      //   console.warn("No matching transaction for code", emailCode);
       return NextResponse.json({ error: "Invalid or already used code" }, { status: 400 });
     }
 
@@ -33,8 +33,8 @@ export async function POST(req: Request) {
 
     // Defensive checks for required tx fields
     if (!recipient_account_number) {
-    //   console.warn("Transaction missing recipient_account_number", { transaction_id, txDoc });
-    //   // optional: flag the tx as failed so it isn't left hanging
+      //   console.warn("Transaction missing recipient_account_number", { transaction_id, txDoc });
+      //   // optional: flag the tx as failed so it isn't left hanging
       await database.updateDocument(
         process.env.DATABASE_ID!,
         process.env.TRANSACTION_COLLECTION_ID!,
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     }
 
     if (!amount || isNaN(amount) || amount <= 0) {
-    //   console.warn("Transaction has invalid amount", txDoc);
+      //   console.warn("Transaction has invalid amount", txDoc);
       return NextResponse.json({ error: "Invalid transaction amount" }, { status: 400 });
     }
 
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     );
 
     if (!accountResult?.documents || accountResult.documents.length === 0) {
-    //   console.warn("Sender account not found", account_id);
+      //   console.warn("Sender account not found", account_id);
       return NextResponse.json({ error: "Account not found" }, { status: 400 });
     }
 
@@ -67,12 +67,16 @@ export async function POST(req: Request) {
     const senderAccountNumber = `****${accountNumber.slice(-4)}`;
 
     if (isNaN(senderBalance)) {
-    //   console.warn("Sender balance invalid", sender);
+      //   console.warn("Sender balance invalid", sender);
       return NextResponse.json({ error: "Invalid sender account balance" }, { status: 400 });
     }
 
     if (senderBalance < amount) {
       return NextResponse.json({ error: "Insufficient funds" }, { status: 400 });
+    }
+
+    if (sender.valid === false) {
+      return NextResponse.json({ error: "Account has been restricted. Please contact support." }, { status: 403 });
     }
 
     // Update sender balance (deduct)
@@ -137,10 +141,10 @@ export async function POST(req: Request) {
       process.env.DATABASE_ID!,
       process.env.TRANSACTION_COLLECTION_ID!,
       transaction_id,
-      { 
-        is_verified: true, 
+      {
+        is_verified: true,
         status: "completed",
-        from: senderAccountNumber, 
+        from: senderAccountNumber,
         type: "transfer",
       }
     );

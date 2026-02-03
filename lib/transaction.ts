@@ -12,27 +12,27 @@ export function buildTransactionEmail(
   code: string,
   recipientName: string,
   recipientAccountNumber: string,
-  amountUSD: number | string
+  amount: number | string
 ): { subject: string; text: string; html: string } {
   // --- validations ---
   if (!/^\d{6}$/.test(String(code).trim())) {
     throw new Error("code must be a 6-digit string (e.g. '123456').");
   }
 
-  const amountNum = Number(amountUSD);
+  const amountNum = Number(amount);
   if (Number.isNaN(amountNum) || !isFinite(amountNum) || amountNum <= 0) {
-    throw new Error("amountUSD must be a positive number or numeric string.");
+    throw new Error("amount must be a positive number or numeric string.");
   }
 
-  const fmtUSD = new Intl.NumberFormat("en-US", {
+  const fmtGBP = new Intl.NumberFormat("en-GB", {
     style: "currency",
-    currency: "USD",
+    currency: "GBP",
   }).format(amountNum);
 
   const safeName = String(recipientName).trim();
   const fullAccount = String(recipientAccountNumber).trim();
 
-  const subject = `Your verification code & Transfer Details for a ${fmtUSD} transfer`;
+  const subject = `Your verification code & Transfer Details for a ${fmtGBP} transfer`;
 
   const text = [
     `Hello,`,
@@ -42,7 +42,7 @@ export function buildTransactionEmail(
     `Transfer details:`,
     `Recipient: ${safeName}`,
     `Account Number: ${fullAccount}`,
-    `Amount: ${fmtUSD}`,
+    `Amount: ${fmtGBP}`,
     ``,
     `If you did not request this transfer, please contact support immediately.`,
     ``,
@@ -58,19 +58,19 @@ export function buildTransactionEmail(
         Your <strong>6-digit verification code</strong> is:
       </p>
       <p style="font-size:20px; letter-spacing:4px; margin:0 0 18px 0;"><strong>${escapeHtml(code)}</strong></p>
-
+ 
       <h3 style="margin:18px 0 6px 0;">Transfer details</h3>
       <table cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:12px;">
         <tr><td style="padding:4px 8px;"><strong>Recipient</strong></td><td style="padding:4px 8px;">${escapeHtml(safeName)}</td></tr>
         <tr><td style="padding:4px 8px;"><strong>Account</strong></td><td style="padding:4px 8px;">${escapeHtml(fullAccount)}</td></tr>
-        <tr><td style="padding:4px 8px;"><strong>Amount</strong></td><td style="padding:4px 8px;">${escapeHtml(fmtUSD)}</td></tr>
+        <tr><td style="padding:4px 8px;"><strong>Amount</strong></td><td style="padding:4px 8px;">${escapeHtml(fmtGBP)}</td></tr>
       </table>
-
+ 
       <p style="margin:12px 0 0 0; color:#666; font-size:13px;">
         If you did not request this transfer, please contact support immediately.<br/>
         This code will expire in 10 minutes.
       </p>
-
+ 
       <hr style="border:none;border-top:1px solid #eee;margin:18px 0;"/>
       <small style="color:#999;">This email was sent by Your Company Name.</small>
     </div>
@@ -90,7 +90,7 @@ function escapeHtml(str: string) {
 
 
 export function generateReference() {
-  const prefixes = ["WT","DIV","RI","TR","SS","TX","PE","IP","AU","LX","FD","CR","AC"];
+  const prefixes = ["WT", "DIV", "RI", "TR", "SS", "TX", "PE", "IP", "AU", "LX", "FD", "CR", "AC"];
   // secure/random integer 0..(max-1)
   function randInt(max: number) {
     // browser crypto

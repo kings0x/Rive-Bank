@@ -73,9 +73,9 @@ export function TransactionSecurityModal({
 
   const formatCurrency = (amount: string) => {
     const num = Number.parseFloat(amount || "0")
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-GB", {
       style: "currency",
-      currency: "USD",
+      currency: "GBP",
       minimumFractionDigits: 2,
     }).format(num)
   }
@@ -111,19 +111,19 @@ export function TransactionSecurityModal({
       })
 
       if (!response.ok) {
-        // server says invalid pin
-        const errorData =  await response.json();
-        if(errorData.error === "Incorrect PIN") {
+        // server says invalid pin or other error
+        const errorData = await response.json();
+        if (errorData.error === "Incorrect PIN") {
           setErrors({ pin: "Invalid PIN. Please try again." })
+          return
         }
-        
-        alert("Account has Been restricted")
-        // Also check lock status in case backend locked it
-        const nowLocked = securityManager.isAccountLocked(user?.email || "")
-        if (nowLocked) {
-          setIsLocked(true)
-          setErrors({ pin: "Account locked due to multiple failed attempts. Please try again in 15 minutes." })
+
+        if (errorData.error === "Account is Restricted") {
+          setErrors({ pin: "This account has been restricted. Please contact support." })
+          return
         }
+
+        setErrors({ pin: errorData.error || "Verification failed. Please try again." })
         return
       }
 
@@ -151,23 +151,29 @@ export function TransactionSecurityModal({
           recipient_name: transactionDetails.recipient,
           recipient_account_number: transactionDetails.accountNumber,
           amount: transactionDetails.amount,
+          pin,
+          type: transactionDetails.cryptoType
         }),
         credentials: "include",
       })
 
       if (!mailResp.ok) {
-        // preserve a helpful error
+        let errorMessage = "Failed to send confirmation email. Please try again."
         try {
           const errorData = await mailResp.json()
-          console.log("sending transaction issue : ", errorData.error)
+          errorMessage = errorData.error || errorMessage
+          if (errorData.details) {
+            console.warn("Mail issue details:", errorData.details)
+          }
         } catch (e) {
-          console.log("send-mail failed")
+          console.error("send-mail parse failed")
         }
-        setErrors({ pin: "Failed to send confirmation email. Please try again." })
+        setErrors({ pin: errorMessage })
         return
       }
 
       // Success path — move to email step
+      const mailData = await mailResp.json()
       setCurrentStep("email")
       setTimeRemaining(300)
 
@@ -182,7 +188,7 @@ export function TransactionSecurityModal({
     } finally {
       setIsLoading(false)
     }
-}
+  }
 
   const handleEmailSubmit = async () => {
     if (emailCode.length !== 6) {
@@ -198,67 +204,67 @@ export function TransactionSecurityModal({
     setIsLoading(true)
     setErrors({})
 
-      let isValid = false;
-      //where i would put code to confirm the email code and update the balances
-      try{
-        const response = await fetch("/api/process-transaction", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-             account_id: userAccountId,
-             emailCode
-            }),
-          credentials: "include",
-        })
-        if (!response.ok){
-          setIsLoading(false)
-          const errorData = await response.json()
-          console.log(errorData.error)
-          setErrors({ email: "Invalid code" })
+    let isValid = false;
+    //where i would put code to confirm the email code and update the balances
+    try {
+      const response = await fetch("/api/process-transaction", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          account_id: userAccountId,
+          emailCode
+        }),
+        credentials: "include",
+      })
+      if (!response.ok) {
+        setIsLoading(false)
+        const errorData = await response.json()
+        console.log(errorData.error)
+        setErrors({ email: "Invalid code" })
+        return
+      }
+      const data = await response.json()
+      isValid = true
+      setIsLoading(false)
+
+    }
+
+    catch (error: any) {
+      setIsLoading(false)
+      console.log(error.message)
+    }
+
+
+    if (!isValid) {
+      setErrors({ email: "Invalid confirmation code" })
+    } else {
+      if (transactionDetails.amount) {
+        const amount = Number.parseFloat(transactionDetails.amount)
+        const isAmountValid = securityManager.validateTransactionAmount(amount, "daily")
+
+        if (!isAmountValid) {
+          setErrors({ email: "Transaction amount exceeds security limits" })
           return
         }
-        const data = await response.json()
-        isValid = true
-        setIsLoading(false)
-        
       }
-      
-      catch(error: any){
-        setIsLoading(false)
-        console.log(error.message)
-      }
-      
 
-      if (!isValid) {
-        setErrors({ email: "Invalid confirmation code" })
-      } else {
-        if (transactionDetails.amount) {
-          const amount = Number.parseFloat(transactionDetails.amount)
-          const isAmountValid = securityManager.validateTransactionAmount(amount, "daily")
+      setCurrentStep("success")
 
-          if (!isAmountValid) {
-            setErrors({ email: "Transaction amount exceeds security limits" })
-            return
-          }
-        }
+      securityManager.logSecurityEvent({
+        type: "transaction",
+        details: `${transactionType} authorized successfully`,
+        status: "success",
+      })
 
-        setCurrentStep("success")
+      await updateAccounts(userId)
+      //use the access store here to update the balances
+      onSuccess()
+      handleClose()
 
-        securityManager.logSecurityEvent({
-          type: "transaction",
-          details: `${transactionType} authorized successfully`,
-          status: "success",
-        })
+    }
 
-        await updateAccounts(userId)
-        //use the access store here to update the balances
-          onSuccess()
-          handleClose()
-        
-      }
-  
   }
 
   const handleClose = () => {

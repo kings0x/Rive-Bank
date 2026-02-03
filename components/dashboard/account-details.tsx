@@ -75,7 +75,7 @@ export function AccountDetails({ accountId, onBack }: AccountDetailsProps) {
   const [pendingStatementDownload, setPendingStatementDownload] = useState(false)
   const account = accountId ? mockAccountsData[accountId as keyof typeof mockAccountsData] : null
   const userAccountState = useAccountStore((s) => s.accountDetails);
-  
+
   let userAccount
   for (let i in userAccountState) {
     if (userAccountState[i].type === accountId) {
@@ -84,7 +84,7 @@ export function AccountDetails({ accountId, onBack }: AccountDetailsProps) {
   }
 
   if (!userAccount) {
-  return null; 
+    return null;
   }
 
   if (!account) {
@@ -104,9 +104,9 @@ export function AccountDetails({ accountId, onBack }: AccountDetailsProps) {
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-GB", {
       style: "currency",
-      currency: "USD",
+      currency: "GBP",
       minimumFractionDigits: 2,
     }).format(amount)
   }
@@ -116,7 +116,7 @@ export function AccountDetails({ accountId, onBack }: AccountDetailsProps) {
     console.log(`[v0] Copied to clipboard: ${text}`)
   }
 
- 
+
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -167,7 +167,7 @@ export function AccountDetails({ accountId, onBack }: AccountDetailsProps) {
               </div>
             </div>
           </div>
-          
+
         </div>
       </Card>
 
@@ -246,7 +246,7 @@ export function AccountDetails({ accountId, onBack }: AccountDetailsProps) {
         </Card>
       </div>
 
-      
+
     </div>
   )
 }
