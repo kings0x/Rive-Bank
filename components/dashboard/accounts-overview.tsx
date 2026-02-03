@@ -65,6 +65,7 @@ interface Account {
 
 export function AccountsOverview({ onSectionChange, onAccountSelect }: AccountsOverviewProps) {
   const userId = useUserIdStore(s => s.userId);
+  const userAccountState = useAccountStore((s) => s.accountDetails);
 
   /*
   useEffect(() => {
@@ -113,7 +114,6 @@ export function AccountsOverview({ onSectionChange, onAccountSelect }: AccountsO
   const [pendingDownload, setPendingDownload] = useState<any | null>(null)
   const [showDownloadOptions, setShowDownloadOptions] = useState(false)
   const [userAccounts, setUserAccounts] = useState<Account[]>([])
-  const userAccountState = useAccountStore((s) => s.accountDetails);
 
   const combinedTransactions = [
     ...(Array.isArray(dbTransactions) ? dbTransactions : [])
