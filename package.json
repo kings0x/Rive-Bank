@@ -50,7 +50,7 @@
     "input-otp": "1.4.1",
     "js-sha3": "^0.9.3",
     "lucide-react": "^0.454.0",
-    "next": "15.2.4",
+    "next": "15.1.7",
     "next-themes": "latest",
     "node-appwrite": "^17.0.0",
     "nodemailer": "^7.0.13",
